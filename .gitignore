@@ -38,7 +38,7 @@ desktop.ini
 *.iws
 *.iml
 *.ipr
-out/
+/out/
 
 ### NetBeans ###
 /nbproject/private/

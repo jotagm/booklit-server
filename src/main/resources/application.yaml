@@ -22,7 +22,7 @@ jwt:
   expiration: ${JWT_EXPIRATION:86400000}
 
 app:
-  url: ${APP_URL:}
+
 
 google:
   books:
