@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: clube-livro
+
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:86400000}
+
+app:
+  url: ${APP_URL:}
+
+google:
+  books:
+    api-key: ${GOOGLE_BOOKS_API_KEY}
+    url: https://www.googleapis.com/books/v1/volumes
