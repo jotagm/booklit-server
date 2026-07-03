@@ -1,7 +1,9 @@
 package github.jotagm.clube_livro.application.service;
 
+import github.jotagm.clube_livro.adapter.in.rest.dto.request.VotoRequest;
 import github.jotagm.clube_livro.adapter.out.persistence.VotoRepository;
 import github.jotagm.clube_livro.domain.clube.votacao.Voto;
+import github.jotagm.clube_livro.domain.exceptions.UsuarioJaVotouException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,8 +15,22 @@ import java.util.UUID;
 public class VotoService {
 
     private final VotoRepository votoRepository;
+    private final OpcaoVotoService opcaoVotoService;
+    private final UsuarioService usuarioService;
+    private final VotacaoService votacaoService;
 
-    public Voto salvar(Voto voto) {
+    public Voto votar(VotoRequest request) {
+        if (votoRepository.findByVotacaoIdAndUsuarioId(request.votacaoId(), request.usuarioId()).isPresent()) {
+            throw new UsuarioJaVotouException();
+        }
+
+        Voto voto = Voto.builder()
+                .opcaoVoto(opcaoVotoService.buscarPorId(request.opcaoVotoId()))
+                .usuario(usuarioService.buscarPorId(request.usuarioId()))
+                .peso(request.peso())
+                .votacao(votacaoService.buscarPorId(request.votacaoId()))
+                .build();
+
         return votoRepository.save(voto);
     }
 

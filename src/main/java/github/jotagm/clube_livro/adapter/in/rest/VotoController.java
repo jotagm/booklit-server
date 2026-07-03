@@ -28,14 +28,8 @@ public class VotoController {
 
     @PostMapping
     public ResponseEntity<VotoResponse> votar(@RequestBody @Valid VotoRequest request) {
-        Voto voto = new Voto();
-        voto.setVotacao(votacaoService.buscarPorId(request.votacaoId()));
-        voto.setOpcaoVoto(opcaoVotoService.buscarPorId(request.opcaoVotoId()));
-        voto.setUsuario(usuarioService.buscarPorId(request.usuarioId()));
-        voto.setPeso(request.peso());
-
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(VotoResponse.from(votoService.salvar(voto)));
+                .body(VotoResponse.from(votoService.votar(request)));
     }
 
     @GetMapping("/{id}")
