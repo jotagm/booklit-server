@@ -1,7 +1,6 @@
 # Booklit
 Grupos de leitura vivem no WhatsApp hoje. Funciona para conversa — mas não oferece estrutura para definir metas de leitura, acompanhar o progresso de cada membro ou votar no próximo livro de forma organizada.
 Booklit é uma alternativa estruturada: um app mobile para clubes de leitura que transforma o caos do grupo de WhatsApp em uma experiência gerenciada, com ritmo definido pelo líder e visibilidade individual de progresso.
-> Projeto de aprendizado em andamento, desenvolvido durante a graduação em Ciências da Computação.
 ---
 ## O que diferencia do WhatsApp
 - Líder define metas de leitura por páginas ou capítulos
