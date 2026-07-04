@@ -41,6 +41,7 @@ public class UsuarioService implements UserDetailsService {
         return usuarioRepository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
     }
     public Usuario atualizar(Usuario usuario) {
+        usuario.setSenhaHash(passwordEncoder.encode(usuario.getSenhaHash()));
         return usuarioRepository.save(usuario);
     }
 

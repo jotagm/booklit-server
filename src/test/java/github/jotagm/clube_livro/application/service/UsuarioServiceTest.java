@@ -84,13 +84,15 @@ class UsuarioServiceTest {
     }
 
     @Test
-    void atualizar_deveSalvarERetornarUsuario() {
-        Usuario usuario = new Usuario(UUID.randomUUID(), "João", "joao@email.com", "hash", null);
+    void atualizar_deveEncodarSenhaESalvarUsuario() {
+        Usuario usuario = new Usuario(UUID.randomUUID(), "João", "joao@email.com", "novaSenha", null);
+        when(passwordEncoder.encode("novaSenha")).thenReturn("novaSenhaEncoded");
         when(usuarioRepository.save(usuario)).thenReturn(usuario);
 
         Usuario resultado = usuarioService.atualizar(usuario);
 
-        assertThat(resultado).isEqualTo(usuario);
+        assertThat(resultado.getSenhaHash()).isEqualTo("novaSenhaEncoded");
+        verify(passwordEncoder).encode("novaSenha");
         verify(usuarioRepository).save(usuario);
     }
 
