@@ -7,6 +7,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -78,13 +82,14 @@ class TemaServiceTest {
     }
 
     @Test
-    void listarTodos_deveRetornarListaDeTemas() {
+    void listarTodos_deveRetornarPaginaDeTemas() {
         List<Tema> temas = List.of(new Tema(UUID.randomUUID(), "Romance"), new Tema(UUID.randomUUID(), "Terror"));
-        when(temaRepository.findAll()).thenReturn(temas);
+        Pageable pageable = PageRequest.of(0, 10);
+        when(temaRepository.findAll(pageable)).thenReturn(new PageImpl<>(temas));
 
-        List<Tema> resultado = temaService.listarTodos();
+        Page<Tema> resultado = temaService.listarTodos(pageable);
 
-        assertThat(resultado).hasSize(2);
+        assertThat(resultado.getContent()).hasSize(2);
     }
 
     @Test

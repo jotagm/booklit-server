@@ -1,6 +1,7 @@
 package github.jotagm.clube_livro.application.service;
 
 import github.jotagm.clube_livro.adapter.out.persistence.UsuarioRepository;
+import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.userdetails.User;
@@ -35,10 +36,10 @@ public class UsuarioService implements UserDetailsService {
     }
 
     public Usuario buscarPorEmail(String email) {
-        return usuarioRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        return usuarioRepository.findByEmail(email).orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado"));
     }
     public Usuario buscarPorId(UUID id) {
-        return usuarioRepository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        return usuarioRepository.findById(id).orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado"));
     }
     public Usuario atualizar(Usuario usuario) {
         usuario.setSenhaHash(passwordEncoder.encode(usuario.getSenhaHash()));

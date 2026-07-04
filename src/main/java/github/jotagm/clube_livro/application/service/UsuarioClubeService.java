@@ -4,6 +4,7 @@ import github.jotagm.clube_livro.adapter.out.persistence.UsuarioClubeRepository;
 import github.jotagm.clube_livro.domain.clube.Clube;
 import github.jotagm.clube_livro.domain.clube.ClubePapel;
 import github.jotagm.clube_livro.domain.clube.UsuarioClube;
+import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,7 @@ public class UsuarioClubeService {
 
     public UsuarioClube buscarPorId(UUID id) {
         return usuarioClubeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Membro não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Membro não encontrado"));
     }
 
     public List<UsuarioClube> listarPorUsuario(UUID usuarioId) {
@@ -48,7 +49,7 @@ public class UsuarioClubeService {
 
     public UsuarioClube buscarPorUsuarioEClube(UUID usuarioId, UUID clubeId) {
         return usuarioClubeRepository.findByUsuarioIdAndClubeId(usuarioId, clubeId)
-                .orElseThrow(() -> new RuntimeException("Usuário não é membro deste clube"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não é membro deste clube"));
     }
 
     public UsuarioClube atualizar(UsuarioClube usuarioClube) {

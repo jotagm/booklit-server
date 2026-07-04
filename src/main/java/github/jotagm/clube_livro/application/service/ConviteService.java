@@ -4,6 +4,7 @@ import github.jotagm.clube_livro.adapter.out.persistence.ConviteRepository;
 import github.jotagm.clube_livro.domain.clube.ClubePapel;
 import github.jotagm.clube_livro.domain.clube.convite.Convite;
 import github.jotagm.clube_livro.domain.clube.convite.ConviteStatus;
+import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,7 +29,7 @@ public class ConviteService {
 
     public Convite buscarPorId(UUID id) {
         return conviteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Convite não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Convite não encontrado"));
     }
 
     public Convite aceitarConvite(UUID id, String emailUsuario) {

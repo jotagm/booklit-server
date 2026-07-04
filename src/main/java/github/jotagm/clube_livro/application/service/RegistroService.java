@@ -2,6 +2,7 @@ package github.jotagm.clube_livro.application.service;
 
 import github.jotagm.clube_livro.adapter.out.persistence.RegistroRepository;
 import github.jotagm.clube_livro.domain.clube.leitura.Registro;
+import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,7 @@ public class RegistroService {
 
     public Registro buscarPorId(UUID id) {
         return registroRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registro não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Registro não encontrado"));
     }
 
     public List<Registro> listarPorLeitura(UUID leituraClubeId) {
@@ -36,12 +37,12 @@ public class RegistroService {
 
     public Registro buscarPorLeituraEUsuario(UUID leituraClubeId, UUID usuarioId) {
         return registroRepository.findByLeituraClubeIdAndUsuarioId(leituraClubeId, usuarioId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registro não encontrado para este usuário nesta leitura"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Registro não encontrado para este usuário nesta leitura"));
     }
 
     public Registro atualizarProgresso(UUID leituraId, UUID usuarioId, int novoValor) {
         Registro registro = registroRepository.findByLeituraClubeIdAndUsuarioId(leituraId, usuarioId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registro não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Registro não encontrado"));
 
         if (novoValor < registro.getValorAtual()) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "O progresso não pode diminuir");

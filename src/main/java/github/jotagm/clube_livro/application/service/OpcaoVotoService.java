@@ -2,6 +2,7 @@ package github.jotagm.clube_livro.application.service;
 
 import github.jotagm.clube_livro.adapter.out.persistence.OpcaoVotoRepository;
 import github.jotagm.clube_livro.domain.clube.votacao.OpcaoVoto;
+import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +21,7 @@ public class OpcaoVotoService {
 
     public OpcaoVoto buscarPorId(UUID id) {
         return opcaoVotoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Opção de voto não encontrada"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Opção de voto não encontrada"));
     }
 
     public List<OpcaoVoto> listarPorVotacao(UUID votacaoId) {

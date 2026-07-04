@@ -4,8 +4,11 @@ import github.jotagm.clube_livro.adapter.in.rest.dto.request.ClubeRequest;
 import github.jotagm.clube_livro.adapter.out.persistence.ClubeRepository;
 import github.jotagm.clube_livro.domain.clube.Clube;
 import github.jotagm.clube_livro.domain.clube.ClubeStatus;
+import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -44,16 +47,20 @@ public class ClubeService {
 
     public Clube buscarPorId(UUID id) {
         return clubeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Clube não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Clube não encontrado"));
     }
 
     public Clube buscarPorNome(String nome) {
         return clubeRepository.findByNome(nome)
-                .orElseThrow(() -> new RuntimeException("Clube não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Clube não encontrado"));
     }
 
-    public List<Clube> listarTodos() {
-        return clubeRepository.findAll();
+    public Page<Clube> listarVisiveis(UUID usuarioId, Pageable pageable) {
+        List<UUID> clubesDoUsuario = usuarioClubeService.listarPorUsuario(usuarioId).stream()
+                .map(uc -> uc.getClube().getId())
+                .toList();
+
+        return clubeRepository.findByPrivadoFalseOrIdIn(clubesDoUsuario, pageable);
     }
 
     public Clube atualizar(Clube clube) {

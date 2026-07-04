@@ -10,13 +10,14 @@ import github.jotagm.clube_livro.domain.clube.Clube;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -37,10 +38,11 @@ public class ClubeController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ClubeResponse>> listar() {
-        return ResponseEntity.ok(clubeService.listarTodos().stream()
-                .map(ClubeResponse::from)
-                .toList());
+    public ResponseEntity<Page<ClubeResponse>> listar(@AuthenticationPrincipal UserDetails userDetails, Pageable pageable) {
+        Usuario usuario = usuarioService.buscarPorEmail(userDetails.getUsername());
+
+        return ResponseEntity.ok(clubeService.listarVisiveis(usuario.getId(), pageable)
+                .map(ClubeResponse::from));
     }
 
     @GetMapping("/{id}")

@@ -4,12 +4,17 @@ import github.jotagm.clube_livro.adapter.in.rest.dto.request.ClubeRequest;
 import github.jotagm.clube_livro.adapter.out.persistence.ClubeRepository;
 import github.jotagm.clube_livro.domain.clube.Clube;
 import github.jotagm.clube_livro.domain.clube.ClubeStatus;
+import github.jotagm.clube_livro.domain.clube.UsuarioClube;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -104,13 +109,20 @@ class ClubeServiceTest {
     }
 
     @Test
-    void listarTodos_deveRetornarListaDeClubes() {
-        List<Clube> clubes = List.of(clubeExemplo(), clubeExemplo());
-        when(clubeRepository.findAll()).thenReturn(clubes);
+    void listarVisiveis_deveRetornarPublicosMaisPrivadosOndeUsuarioEhMembro() {
+        UUID usuarioId = UUID.randomUUID();
+        Clube publico = new Clube(UUID.randomUUID(), "Público", "Descrição", false, ClubeStatus.ATIVO, null, List.of());
+        Clube privadoMembro = new Clube(UUID.randomUUID(), "Privado A", "Descrição", true, ClubeStatus.ATIVO, null, List.of());
+        Pageable pageable = PageRequest.of(0, 10);
 
-        List<Clube> resultado = clubeService.listarTodos();
+        when(usuarioClubeService.listarPorUsuario(usuarioId))
+                .thenReturn(List.of(UsuarioClube.builder().clube(privadoMembro).build()));
+        when(clubeRepository.findByPrivadoFalseOrIdIn(List.of(privadoMembro.getId()), pageable))
+                .thenReturn(new PageImpl<>(List.of(publico, privadoMembro)));
 
-        assertThat(resultado).hasSize(2);
+        Page<Clube> resultado = clubeService.listarVisiveis(usuarioId, pageable);
+
+        assertThat(resultado.getContent()).containsExactlyInAnyOrder(publico, privadoMembro);
     }
 
     @Test

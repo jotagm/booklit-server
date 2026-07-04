@@ -6,11 +6,12 @@ import github.jotagm.clube_livro.application.service.TemaService;
 import github.jotagm.clube_livro.domain.tema.Tema;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -30,10 +31,8 @@ public class TemaController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TemaResponse>> listar() {
-        return ResponseEntity.ok(temaService.listarTodos().stream()
-                .map(TemaResponse::from)
-                .toList());
+    public ResponseEntity<Page<TemaResponse>> listar(Pageable pageable) {
+        return ResponseEntity.ok(temaService.listarTodos(pageable).map(TemaResponse::from));
     }
 
     @GetMapping("/{id}")

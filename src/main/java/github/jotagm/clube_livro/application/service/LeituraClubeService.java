@@ -5,6 +5,7 @@ import github.jotagm.clube_livro.adapter.out.persistence.LeituraClubeRepository;
 import github.jotagm.clube_livro.domain.clube.UsuarioClube;
 import github.jotagm.clube_livro.domain.clube.leitura.LeituraClube;
 import github.jotagm.clube_livro.domain.clube.leitura.Registro;
+import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -57,7 +58,7 @@ public class LeituraClubeService {
 
     public LeituraClube buscarPorId(UUID id) {
         return leituraClubeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Leitura não encontrada"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Leitura não encontrada"));
     }
 
     public List<LeituraClube> listarPorClube(UUID clubeId) {

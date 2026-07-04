@@ -6,6 +6,7 @@ import github.jotagm.clube_livro.domain.clube.UsuarioClube;
 import github.jotagm.clube_livro.domain.clube.votacao.OpcaoVoto;
 import github.jotagm.clube_livro.domain.clube.votacao.Votacao;
 import github.jotagm.clube_livro.domain.clube.votacao.Voto;
+import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import github.jotagm.clube_livro.domain.exceptions.UsuarioJaVotouException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
@@ -51,7 +52,7 @@ public class VotoService {
 
     public Voto buscarPorId(UUID id) {
         return votoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Voto não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Voto não encontrado"));
     }
 
     public List<Voto> listarPorVotacao(UUID votacaoId) {
@@ -64,7 +65,7 @@ public class VotoService {
 
     public Voto buscarPorVotacaoEUsuario(UUID votacaoId, UUID usuarioId) {
         return votoRepository.findByVotacaoIdAndUsuarioId(votacaoId, usuarioId)
-                .orElseThrow(() -> new RuntimeException("Voto não encontrado para este usuário nesta votação"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Voto não encontrado para este usuário nesta votação"));
     }
 
     public Voto atualizar(Voto voto) {
