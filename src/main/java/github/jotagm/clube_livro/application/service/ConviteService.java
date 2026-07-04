@@ -2,9 +2,9 @@ package github.jotagm.clube_livro.application.service;
 
 import github.jotagm.clube_livro.adapter.out.persistence.ConviteRepository;
 import github.jotagm.clube_livro.domain.clube.ClubePapel;
-import github.jotagm.clube_livro.domain.clube.UsuarioClube;
 import github.jotagm.clube_livro.domain.clube.convite.Convite;
 import github.jotagm.clube_livro.domain.clube.convite.ConviteStatus;
+import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -33,7 +33,6 @@ public class ConviteService {
 
     public Convite aceitarConvite(UUID id, String emailUsuario) {
         Convite convite = buscarPorId(id);
-        UsuarioClube uc = new UsuarioClube();
 
         if (!convite.getEmailDestinatario().equals(emailUsuario)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso negado");
@@ -44,11 +43,8 @@ public class ConviteService {
 
         convite.setStatus(ConviteStatus.ACEITO);
 
-        uc.setClube(convite.getClube());
-        uc.setUsuario(usuarioService.buscarPorEmail(emailUsuario));
-        uc.setPapel(ClubePapel.MEMBRO);
-        uc.setEntrouEm(LocalDateTime.now());
-        usuarioClubeService.salvar(uc);
+        Usuario usuario = usuarioService.buscarPorEmail(emailUsuario);
+        usuarioClubeService.adicionar(usuario, convite.getClube(), ClubePapel.MEMBRO);
 
         return conviteRepository.save(convite);
     }

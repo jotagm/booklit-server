@@ -1,8 +1,11 @@
 package github.jotagm.clube_livro.application.service;
 
 import github.jotagm.clube_livro.adapter.out.persistence.UsuarioClubeRepository;
+import github.jotagm.clube_livro.domain.clube.Clube;
 import github.jotagm.clube_livro.domain.clube.ClubePapel;
+import github.jotagm.clube_livro.domain.clube.ClubeStatus;
 import github.jotagm.clube_livro.domain.clube.UsuarioClube;
+import github.jotagm.clube_livro.domain.usuario.Usuario;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,6 +19,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,14 +37,31 @@ class UsuarioClubeServiceTest {
     }
 
     @Test
-    void salvar_deveSalvarERetornarMembro() {
-        UsuarioClube membro = membroExemplo(UUID.randomUUID());
-        when(usuarioClubeRepository.save(membro)).thenReturn(membro);
+    void adicionarLider_deveCriarVinculoComPapelLider() {
+        Usuario usuario = new Usuario(UUID.randomUUID(), "João", "joao@email.com", "hash", null);
+        Clube clube = new Clube(UUID.randomUUID(), "Clube do Livro", "Descrição", false, ClubeStatus.ATIVO, null, List.of());
+        when(usuarioClubeRepository.save(any(UsuarioClube.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        UsuarioClube resultado = usuarioClubeService.salvar(membro);
+        UsuarioClube resultado = usuarioClubeService.adicionarLider(usuario, clube);
 
-        assertThat(resultado).isEqualTo(membro);
-        verify(usuarioClubeRepository).save(membro);
+        assertThat(resultado.getPapel()).isEqualTo(ClubePapel.LIDER);
+        assertThat(resultado.getUsuario()).isEqualTo(usuario);
+        assertThat(resultado.getClube()).isEqualTo(clube);
+    }
+
+    @Test
+    void adicionar_deveCriarVinculoComPapelInformado() {
+        Usuario usuario = new Usuario(UUID.randomUUID(), "João", "joao@email.com", "hash", null);
+        Clube clube = new Clube(UUID.randomUUID(), "Clube do Livro", "Descrição", false, ClubeStatus.ATIVO, null, List.of());
+        when(usuarioClubeRepository.save(any(UsuarioClube.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        UsuarioClube resultado = usuarioClubeService.adicionar(usuario, clube, ClubePapel.MEMBRO);
+
+        assertThat(resultado.getPapel()).isEqualTo(ClubePapel.MEMBRO);
+        assertThat(resultado.getUsuario()).isEqualTo(usuario);
+        assertThat(resultado.getClube()).isEqualTo(clube);
     }
 
     @Test

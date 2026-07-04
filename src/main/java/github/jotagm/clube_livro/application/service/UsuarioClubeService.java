@@ -1,10 +1,14 @@
 package github.jotagm.clube_livro.application.service;
 
 import github.jotagm.clube_livro.adapter.out.persistence.UsuarioClubeRepository;
+import github.jotagm.clube_livro.domain.clube.Clube;
+import github.jotagm.clube_livro.domain.clube.ClubePapel;
 import github.jotagm.clube_livro.domain.clube.UsuarioClube;
+import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,8 +18,19 @@ public class UsuarioClubeService {
 
     private final UsuarioClubeRepository usuarioClubeRepository;
 
-    public UsuarioClube salvar(UsuarioClube usuarioClube) {
+    public UsuarioClube adicionar(Usuario usuario, Clube clube, ClubePapel papel) {
+        UsuarioClube usuarioClube = UsuarioClube.builder()
+                .usuario(usuario)
+                .clube(clube)
+                .papel(papel)
+                .entrouEm(LocalDateTime.now())
+                .build();
+
         return usuarioClubeRepository.save(usuarioClube);
+    }
+
+    public UsuarioClube adicionarLider(Usuario usuario, Clube clube) {
+        return adicionar(usuario, clube, ClubePapel.LIDER);
     }
 
     public UsuarioClube buscarPorId(UUID id) {

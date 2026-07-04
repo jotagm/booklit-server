@@ -4,8 +4,10 @@ import github.jotagm.clube_livro.adapter.in.rest.dto.request.ClubeRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.ClubeResponse;
 import github.jotagm.clube_livro.application.service.ClubeService;
 import github.jotagm.clube_livro.application.service.TemaService;
+import github.jotagm.clube_livro.application.service.UsuarioService;
+import github.jotagm.clube_livro.configs.RequireLider;
 import github.jotagm.clube_livro.domain.clube.Clube;
-import github.jotagm.clube_livro.domain.clube.ClubeStatus;
+import github.jotagm.clube_livro.domain.usuario.Usuario;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,7 +16,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,24 +26,14 @@ public class ClubeController {
 
     private final ClubeService clubeService;
     private final TemaService temaService;
+    private final UsuarioService usuarioService;
 
     @PostMapping()
     public ResponseEntity<ClubeResponse> criar(@AuthenticationPrincipal UserDetails userDetails, @RequestBody @Valid ClubeRequest request) {
-        Clube clube = new Clube();
-        clube.setNome(request.nome());
-        clube.setDescricao(request.descricao());
-        clube.setPrivado(request.privado());
-        clube.setStatus(ClubeStatus.ATIVO);
-        clube.setCreatedAt(LocalDateTime.now());
-
-        if (request.temaIds() != null) {
-            clube.setTemas(request.temaIds().stream()
-                    .map(temaService::buscarPorId)
-                    .toList());
-        }
+        Usuario criador = usuarioService.buscarPorEmail(userDetails.getUsername());
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ClubeResponse.from(clubeService.salvar(clube)));
+                .body(ClubeResponse.from(clubeService.criar(request, criador)));
     }
 
     @GetMapping
@@ -63,6 +54,7 @@ public class ClubeController {
     }
 
     @PutMapping("/{id}")
+    @RequireLider("#id")
     public ResponseEntity<ClubeResponse> atualizar(@PathVariable UUID id,
                                                    @RequestBody @Valid ClubeRequest request) {
         Clube clube = clubeService.buscarPorId(id);
@@ -80,6 +72,7 @@ public class ClubeController {
     }
 
     @DeleteMapping("/{id}")
+    @RequireLider("#id")
     public ResponseEntity<Void> deletar(@PathVariable UUID id) {
         clubeService.deletar(id);
         return ResponseEntity.noContent().build();

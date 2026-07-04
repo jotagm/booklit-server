@@ -1,8 +1,10 @@
 package github.jotagm.clube_livro.application.service;
 
+import github.jotagm.clube_livro.adapter.in.rest.dto.request.ClubeRequest;
 import github.jotagm.clube_livro.adapter.out.persistence.ClubeRepository;
 import github.jotagm.clube_livro.domain.clube.Clube;
 import github.jotagm.clube_livro.domain.clube.ClubeStatus;
+import github.jotagm.clube_livro.domain.usuario.Usuario;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -15,6 +17,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,11 +27,30 @@ class ClubeServiceTest {
     @Mock
     private ClubeRepository clubeRepository;
 
+    @Mock
+    private TemaService temaService;
+
+    @Mock
+    private UsuarioClubeService usuarioClubeService;
+
     @InjectMocks
     private ClubeService clubeService;
 
     private Clube clubeExemplo() {
         return new Clube(UUID.randomUUID(), "Clube do Livro", "Descrição", false, ClubeStatus.ATIVO, null, List.of());
+    }
+
+    @Test
+    void criar_deveSalvarClubeEAdicionarCriadorComoLider() {
+        ClubeRequest request = new ClubeRequest("Clube do Livro", "Descrição", false, null);
+        Usuario criador = new Usuario(UUID.randomUUID(), "João", "joao@email.com", "hash", null);
+        Clube clubeSalvo = clubeExemplo();
+        when(clubeRepository.save(any(Clube.class))).thenReturn(clubeSalvo);
+
+        Clube resultado = clubeService.criar(request, criador);
+
+        assertThat(resultado).isEqualTo(clubeSalvo);
+        verify(usuarioClubeService).adicionarLider(criador, clubeSalvo);
     }
 
     @Test

@@ -5,6 +5,7 @@ import github.jotagm.clube_livro.adapter.in.rest.dto.response.GoogleBooksRespons
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.LeituraClubeResponse;
 import github.jotagm.clube_livro.adapter.out.client.GoogleBooksClient;
 import github.jotagm.clube_livro.application.service.LeituraClubeService;
+import github.jotagm.clube_livro.configs.RequireLider;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,7 @@ public class LeituraClubeController {
     private final GoogleBooksClient googleBooksClient;
 
     @PostMapping
+    @RequireLider("#request.clubeId()")
     public ResponseEntity<LeituraClubeResponse> criar(@RequestBody @Valid LeituraClubeRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(LeituraClubeResponse.from(leituraClubeService.criar(request)));
@@ -41,12 +43,14 @@ public class LeituraClubeController {
     }
 
     @PutMapping("/{id}")
+    @RequireLider("@leituraClubeService.buscarPorId(#id).clube.id")
     public ResponseEntity<LeituraClubeResponse> atualizar(@PathVariable UUID id,
                                                           @RequestBody @Valid LeituraClubeRequest request) {
         return ResponseEntity.ok(LeituraClubeResponse.from(leituraClubeService.atualizar(id, request)));
     }
 
     @DeleteMapping("/{id}")
+    @RequireLider("@leituraClubeService.buscarPorId(#id).clube.id")
     public ResponseEntity<Void> deletar(@PathVariable UUID id) {
         leituraClubeService.deletar(id);
         return ResponseEntity.noContent().build();
