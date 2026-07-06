@@ -6,8 +6,11 @@ import github.jotagm.clube_livro.domain.clube.votacao.Votacao;
 import github.jotagm.clube_livro.domain.clube.votacao.Voto;
 import github.jotagm.clube_livro.domain.exceptions.VotacaoSemVotosException;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +19,7 @@ import java.util.stream.Collectors;
 
 import static github.jotagm.clube_livro.domain.clube.votacao.VotacaoStatus.ENCERRADA;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class VotacaoEnceramentoService {
@@ -69,6 +73,21 @@ public class VotacaoEnceramentoService {
                 .build();
 
         return leituraClubeService.salvar(leituraClube);
+    }
+
+    public List<LeituraClube> encerrarVotacoesVencidas() {
+        List<Votacao> vencidas = votacaoService.listarAbertasVencidas(LocalDateTime.now());
+        List<LeituraClube> encerradas = new ArrayList<>();
+
+        for (Votacao votacao : vencidas) {
+            try {
+                encerradas.add(finalizarVotacao(votacao.getId()));
+            } catch (RuntimeException e) {
+                log.error("Falha ao encerrar automaticamente a votação {}: {}", votacao.getId(), e.getMessage());
+            }
+        }
+
+        return encerradas;
     }
 
     private UUID desempatar(List<UUID> opcoesEmpatadas, List<Voto> votos) {

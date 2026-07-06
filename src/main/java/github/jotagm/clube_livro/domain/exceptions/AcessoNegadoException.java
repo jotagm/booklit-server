@@ -5,4 +5,8 @@ public class AcessoNegadoException extends RuntimeException {
     public AcessoNegadoException() {
         super("Acesso negado: apenas o líder do clube pode realizar esta ação");
     }
+
+    public AcessoNegadoException(String mensagem) {
+        super(mensagem);
+    }
 }

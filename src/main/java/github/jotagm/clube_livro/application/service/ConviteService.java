@@ -76,4 +76,11 @@ public class ConviteService {
     public void deletar(UUID id) {
         conviteRepository.deleteById(id);
     }
+
+    public int expirarVencidos() {
+        List<Convite> vencidos = conviteRepository.findByStatusAndExpiraEmBefore(ConviteStatus.PENDENTE, LocalDateTime.now());
+        vencidos.forEach(convite -> convite.setStatus(ConviteStatus.EXPIRADO));
+        conviteRepository.saveAll(vencidos);
+        return vencidos.size();
+    }
 }

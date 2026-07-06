@@ -2,6 +2,7 @@ package github.jotagm.clube_livro.adapter.in.rest;
 
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.ErroResponse;
 import github.jotagm.clube_livro.domain.exceptions.AcessoNegadoException;
+import github.jotagm.clube_livro.domain.exceptions.ComentarioAninhadoException;
 import github.jotagm.clube_livro.domain.exceptions.LivroExternoIndisponivelException;
 import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import github.jotagm.clube_livro.domain.exceptions.UsuarioJaVotouException;
@@ -39,6 +40,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(LivroExternoIndisponivelException.class)
     public ResponseEntity<ErroResponse> tratarLivroExternoIndisponivel(LivroExternoIndisponivelException ex) {
         return construir(HttpStatus.BAD_GATEWAY, ex.getMessage());
+    }
+
+    @ExceptionHandler(ComentarioAninhadoException.class)
+    public ResponseEntity<ErroResponse> tratarComentarioAninhado(ComentarioAninhadoException ex) {
+        return construir(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
     }
 
     private ResponseEntity<ErroResponse> construir(HttpStatus status, String mensagem) {

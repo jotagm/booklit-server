@@ -16,6 +16,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -105,5 +107,33 @@ class ConviteServiceTest {
         conviteService.deletar(id);
 
         verify(conviteRepository).deleteById(id);
+    }
+
+    @Test
+    void expirarVencidos_deveMarcarConvitesPendentesVencidosComoExpirado() {
+        Convite vencido1 = conviteExemplo(UUID.randomUUID());
+        Convite vencido2 = conviteExemplo(UUID.randomUUID());
+        List<Convite> vencidos = List.of(vencido1, vencido2);
+
+        when(conviteRepository.findByStatusAndExpiraEmBefore(eq(ConviteStatus.PENDENTE), any(LocalDateTime.class)))
+                .thenReturn(vencidos);
+
+        int quantidade = conviteService.expirarVencidos();
+
+        assertThat(quantidade).isEqualTo(2);
+        assertThat(vencido1.getStatus()).isEqualTo(ConviteStatus.EXPIRADO);
+        assertThat(vencido2.getStatus()).isEqualTo(ConviteStatus.EXPIRADO);
+        verify(conviteRepository).saveAll(vencidos);
+    }
+
+    @Test
+    void expirarVencidos_deveRetornarZeroQuandoNaoHaConviteVencido() {
+        when(conviteRepository.findByStatusAndExpiraEmBefore(eq(ConviteStatus.PENDENTE), any(LocalDateTime.class)))
+                .thenReturn(List.of());
+
+        int quantidade = conviteService.expirarVencidos();
+
+        assertThat(quantidade).isZero();
+        verify(conviteRepository).saveAll(List.of());
     }
 }

@@ -28,3 +28,11 @@ google:
   books:
     api-key: ${GOOGLE_BOOKS_API_KEY}
     url: https://www.googleapis.com/books/v1/volumes
+
+agendamento:
+  convite:
+    expiracao:
+      cron: "${CONVITE_EXPIRACAO_CRON:0 0 * * * *}"
+  votacao:
+    encerramento:
+      cron: "${VOTACAO_ENCERRAMENTO_CRON:0 0 * * * *}"

@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -135,5 +136,49 @@ class VotacaoEnceramentoServiceTest {
         LeituraClube resultado = votacaoEnceramentoService.finalizarVotacao(votacaoId);
 
         assertThat(resultado.getLivroTitulo()).isEqualTo(esperada.getLivroTitulo());
+    }
+
+    @Test
+    void encerrarVotacoesVencidas_deveEncerrarTodasAsVotacoesAbertasVencidas() {
+        Votacao votacao1 = votacaoExemplo(UUID.randomUUID());
+        Votacao votacao2 = votacaoExemplo(UUID.randomUUID());
+        OpcaoVoto opcao1 = opcaoExemplo("Livro 1");
+        OpcaoVoto opcao2 = opcaoExemplo("Livro 2");
+
+        when(votacaoService.listarAbertasVencidas(any(LocalDateTime.class))).thenReturn(List.of(votacao1, votacao2));
+        when(votacaoService.buscarPorId(votacao1.getId())).thenReturn(votacao1);
+        when(votacaoService.buscarPorId(votacao2.getId())).thenReturn(votacao2);
+        when(votoService.listarPorVotacao(votacao1.getId())).thenReturn(List.of(votoExemplo(opcao1, 1)));
+        when(votoService.listarPorVotacao(votacao2.getId())).thenReturn(List.of(votoExemplo(opcao2, 1)));
+        when(leituraClubeService.salvar(any(LeituraClube.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        List<LeituraClube> resultado = votacaoEnceramentoService.encerrarVotacoesVencidas();
+
+        assertThat(resultado).hasSize(2);
+        assertThat(votacao1.getStatus()).isEqualTo(VotacaoStatus.ENCERRADA);
+        assertThat(votacao2.getStatus()).isEqualTo(VotacaoStatus.ENCERRADA);
+    }
+
+    @Test
+    void encerrarVotacoesVencidas_deveContinuarQuandoUmaVotacaoFalha() {
+        Votacao votacaoSemVoto = votacaoExemplo(UUID.randomUUID());
+        Votacao votacaoComVoto = votacaoExemplo(UUID.randomUUID());
+        OpcaoVoto opcao = opcaoExemplo("Livro válido");
+
+        when(votacaoService.listarAbertasVencidas(any(LocalDateTime.class))).thenReturn(List.of(votacaoSemVoto, votacaoComVoto));
+        when(votacaoService.buscarPorId(votacaoSemVoto.getId())).thenReturn(votacaoSemVoto);
+        when(votacaoService.buscarPorId(votacaoComVoto.getId())).thenReturn(votacaoComVoto);
+        when(votoService.listarPorVotacao(votacaoSemVoto.getId())).thenReturn(List.of());
+        when(votoService.listarPorVotacao(votacaoComVoto.getId())).thenReturn(List.of(votoExemplo(opcao, 1)));
+        when(leituraClubeService.salvar(any(LeituraClube.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        List<LeituraClube> resultado = votacaoEnceramentoService.encerrarVotacoesVencidas();
+
+        assertThat(resultado).hasSize(1);
+        assertThat(resultado.get(0).getLivroTitulo()).isEqualTo("Livro válido");
+        assertThat(votacaoSemVoto.getStatus()).isEqualTo(VotacaoStatus.ABERTA);
+        assertThat(votacaoComVoto.getStatus()).isEqualTo(VotacaoStatus.ENCERRADA);
     }
 }

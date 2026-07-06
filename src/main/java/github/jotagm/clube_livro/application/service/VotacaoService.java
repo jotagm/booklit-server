@@ -2,10 +2,12 @@ package github.jotagm.clube_livro.application.service;
 
 import github.jotagm.clube_livro.adapter.out.persistence.VotacaoRepository;
 import github.jotagm.clube_livro.domain.clube.votacao.Votacao;
+import github.jotagm.clube_livro.domain.clube.votacao.VotacaoStatus;
 import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,5 +36,9 @@ public class VotacaoService {
 
     public void deletar(UUID id) {
         votacaoRepository.deleteById(id);
+    }
+
+    public List<Votacao> listarAbertasVencidas(LocalDateTime momento) {
+        return votacaoRepository.findByStatusAndDataEncerramentoBefore(VotacaoStatus.ABERTA, momento);
     }
 }
