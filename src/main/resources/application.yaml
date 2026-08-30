@@ -1,3 +1,7 @@
+server:
+  # A Railway injeta PORT e espera que a aplicacao escute nela.
+  port: ${PORT:8080}
+
 spring:
   application:
     name: clube-livro
@@ -36,3 +40,13 @@ agendamento:
   votacao:
     encerramento:
       cron: "${VOTACAO_ENCERRAMENTO_CRON:0 0 * * * *}"
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+    display-request-duration: true
+  default-produces-media-type: application/json

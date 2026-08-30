@@ -51,6 +51,19 @@ Usuario ──── UsuarioClube ──── Clube
 | Banco de dados | PostgreSQL 16 |
 | Deploy | Railway + Neon |
 | Integração externa | Google Books API |
+| Documentação da API | springdoc-openapi (Swagger UI) |
+
+---
+## Documentação da API
+Com a aplicação no ar, a especificação OpenAPI é gerada a partir do próprio código:
+
+| Recurso | Caminho |
+|---|---|
+| Swagger UI | `/swagger-ui.html` |
+| OpenAPI JSON | `/v3/api-docs` |
+
+Ambos são públicos. Para testar os endpoints protegidos: crie um usuário em `POST /usuarios`,
+autentique em `POST /auth/login` e informe o token retornado no botão **Authorize**.
 #   b o o k l i t - s e r v e r 
  
  #   b o o k l i t - s e r v e r 
