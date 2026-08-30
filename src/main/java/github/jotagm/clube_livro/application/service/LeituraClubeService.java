@@ -5,8 +5,10 @@ import github.jotagm.clube_livro.adapter.out.persistence.LeituraClubeRepository;
 import github.jotagm.clube_livro.domain.clube.UsuarioClube;
 import github.jotagm.clube_livro.domain.clube.leitura.LeituraClube;
 import github.jotagm.clube_livro.domain.clube.leitura.Registro;
+import github.jotagm.clube_livro.domain.exceptions.IntervaloInvalidoException;
 import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -15,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class LeituraClubeService {
@@ -29,6 +32,8 @@ public class LeituraClubeService {
     }
 
     public LeituraClube criar(LeituraClubeRequest request) {
+        validarIntervalo(request);
+
         LeituraClube leitura = LeituraClube.builder()
                 .clube(clubeService.buscarPorId(request.clubeId()))
                 .livroGoogleId(request.livroGoogleId())
@@ -53,6 +58,10 @@ public class LeituraClubeService {
             registroService.salvar(registro);
         });
 
+        log.info("Leitura criada id={} clube={} livro='{}' meta={} {} registros={}",
+                leituraSalva.getId(), request.clubeId(), leituraSalva.getLivroTitulo(),
+                leituraSalva.getValorMeta(), leituraSalva.getTipoMeta(), membros.size());
+
         return leituraSalva;
     }
 
@@ -66,6 +75,8 @@ public class LeituraClubeService {
     }
 
     public LeituraClube atualizar(UUID id, LeituraClubeRequest request) {
+        validarIntervalo(request);
+
         LeituraClube leitura = buscarPorId(id);
         leitura.setLivroGoogleId(request.livroGoogleId());
         leitura.setLivroTitulo(request.livroTitulo());
@@ -79,6 +90,17 @@ public class LeituraClubeService {
 
     public void deletar(UUID id) {
         leituraClubeRepository.deleteById(id);
+    }
+
+    /**
+     * Data de início no passado é permitida de propósito — serve para registrar uma leitura
+     * que já estava em andamento. O que não pode é fim antes do início: o intervalo nunca
+     * conteria o instante atual, então a leitura seria salva e nunca apareceria.
+     */
+    private void validarIntervalo(LeituraClubeRequest request) {
+        if (!request.dataFim().isAfter(request.dataInicio())) {
+            throw new IntervaloInvalidoException();
+        }
     }
 
     public Optional<LeituraClube> buscarLeituraAtiva(UUID clubeId){

@@ -4,6 +4,7 @@ import github.jotagm.clube_livro.adapter.out.persistence.UsuarioRepository;
 import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -12,9 +13,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
+@Slf4j
 @Service
 @AllArgsConstructor
-
 public class UsuarioService implements UserDetailsService {
 
     private final UsuarioRepository usuarioRepository;
@@ -32,7 +33,9 @@ public class UsuarioService implements UserDetailsService {
 
     public Usuario salvar(Usuario usuario) {
         usuario.setSenhaHash(passwordEncoder.encode(usuario.getSenhaHash()));
-        return usuarioRepository.save(usuario);
+        Usuario salvo = usuarioRepository.save(usuario);
+        log.info("Usuario criado id={} email={}", salvo.getId(), salvo.getEmail());
+        return salvo;
     }
 
     public Usuario buscarPorEmail(String email) {

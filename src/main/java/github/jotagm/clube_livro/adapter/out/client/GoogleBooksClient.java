@@ -43,7 +43,12 @@ public class GoogleBooksClient {
             throw new LivroExternoIndisponivelException("A busca de livros não retornou uma resposta válida");
         }
 
-        log.info("livro encontrado {}", response);
+        // O objeto inteiro em INFO despejava dezenas de linhas por busca; o que interessa
+        // no dia a dia é se a chamada voltou e com quantos resultados.
+        int encontrados = response.items() == null ? 0 : response.items().size();
+        log.info("Google Books: '{}' pagina={} retornou {} resultado(s)", title, page, encontrados);
+        log.debug("Resposta completa do Google Books: {}", response);
+
         return response;
     }
 }

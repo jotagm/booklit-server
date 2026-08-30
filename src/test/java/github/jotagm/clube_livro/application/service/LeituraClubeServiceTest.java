@@ -4,6 +4,7 @@ import github.jotagm.clube_livro.adapter.in.rest.dto.request.LeituraClubeRequest
 import github.jotagm.clube_livro.adapter.out.persistence.LeituraClubeRepository;
 import github.jotagm.clube_livro.domain.clube.leitura.LeituraClube;
 import github.jotagm.clube_livro.domain.clube.leitura.TipoMeta;
+import github.jotagm.clube_livro.domain.exceptions.IntervaloInvalidoException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,8 +17,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,6 +32,12 @@ class LeituraClubeServiceTest {
 
     @Mock
     private ClubeService clubeService;
+
+    @Mock
+    private UsuarioClubeService usuarioClubeService;
+
+    @Mock
+    private RegistroService registroService;
 
     @InjectMocks
     private LeituraClubeService leituraClubeService;
@@ -98,6 +107,57 @@ class LeituraClubeServiceTest {
 
         assertThat(resultado.getLivroTitulo()).isEqualTo("Memórias Póstumas");
         verify(leituraClubeRepository).save(leitura);
+    }
+
+    @Test
+    void criar_deveRecusarIntervaloComFimAntesDoInicio() {
+        LocalDateTime inicio = LocalDateTime.now();
+        LeituraClubeRequest request = new LeituraClubeRequest(
+                UUID.randomUUID(), "google-789", "Grande Sertão", "url-capa",
+                TipoMeta.PAGINA, 300, inicio, inicio.minusDays(1));
+
+        assertThatThrownBy(() -> leituraClubeService.criar(request))
+                .isInstanceOf(IntervaloInvalidoException.class);
+
+        verify(leituraClubeRepository, never()).save(any());
+    }
+
+    @Test
+    void criar_deveRecusarInicioEFimIguais() {
+        LocalDateTime instante = LocalDateTime.now();
+        LeituraClubeRequest request = new LeituraClubeRequest(
+                UUID.randomUUID(), "google-789", "Grande Sertão", "url-capa",
+                TipoMeta.PAGINA, 300, instante, instante);
+
+        assertThatThrownBy(() -> leituraClubeService.criar(request))
+                .isInstanceOf(IntervaloInvalidoException.class);
+    }
+
+    @Test
+    void atualizar_deveRecusarIntervaloInvalido() {
+        UUID id = UUID.randomUUID();
+        LocalDateTime inicio = LocalDateTime.now();
+        LeituraClubeRequest request = new LeituraClubeRequest(
+                UUID.randomUUID(), "google-456", "Memórias Póstumas", "url-capa",
+                TipoMeta.PAGINA, 300, inicio, inicio.minusHours(1));
+
+        assertThatThrownBy(() -> leituraClubeService.atualizar(id, request))
+                .isInstanceOf(IntervaloInvalidoException.class);
+
+        verify(leituraClubeRepository, never()).save(any());
+    }
+
+    @Test
+    void criar_deveAceitarInicioNoPassado() {
+        // Registrar leitura que já estava em andamento é caso de uso legítimo.
+        LeituraClubeRequest request = new LeituraClubeRequest(
+                UUID.randomUUID(), "google-789", "Grande Sertão", "url-capa",
+                TipoMeta.PAGINA, 300, LocalDateTime.now().minusDays(10), LocalDateTime.now().plusDays(20));
+
+        when(usuarioClubeService.listarPorClube(any())).thenReturn(List.of());
+        when(leituraClubeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThatCode(() -> leituraClubeService.criar(request)).doesNotThrowAnyException();
     }
 
     @Test

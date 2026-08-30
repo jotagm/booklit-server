@@ -24,6 +24,7 @@ public class SecurityConfig {
     private final JwtFilter jwtFilter;
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
+    private final RestAuthErrorHandler restAuthErrorHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -35,6 +36,12 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios").permitAll()
                         .anyRequest().authenticated()
+                )
+                // Sem isto o Spring Security responde 403 de corpo vazio tanto para "sem token"
+                // quanto para "sem permissão", e o cliente não consegue distinguir os dois.
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(restAuthErrorHandler)
+                        .accessDeniedHandler(restAuthErrorHandler)
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

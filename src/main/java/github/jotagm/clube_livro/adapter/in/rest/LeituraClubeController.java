@@ -35,6 +35,7 @@ public class LeituraClubeController {
             summary = "Cria uma leitura para o clube",
             description = "Restrito ao LIDER do clube informado em `clubeId`.")
     @ApiResponse(responseCode = "201", description = "Leitura criada")
+    @ApiResponse(responseCode = "422", description = "`dataFim` não é posterior a `dataInicio`")
     @ApiResponse(responseCode = "403", description = "O usuário autenticado não é líder do clube")
     @ApiResponse(responseCode = "404", description = "Clube não encontrado")
     @PostMapping
@@ -67,6 +68,7 @@ public class LeituraClubeController {
             summary = "Atualiza uma leitura",
             description = "Restrito ao LIDER do clube dono da leitura.")
     @ApiResponse(responseCode = "200", description = "Leitura atualizada")
+    @ApiResponse(responseCode = "422", description = "`dataFim` não é posterior a `dataInicio`")
     @ApiResponse(responseCode = "403", description = "O usuário autenticado não é líder do clube")
     @ApiResponse(responseCode = "404", description = "Leitura não encontrada")
     @PutMapping("/{id}")

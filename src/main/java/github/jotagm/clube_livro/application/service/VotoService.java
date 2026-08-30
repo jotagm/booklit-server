@@ -10,11 +10,13 @@ import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException
 import github.jotagm.clube_livro.domain.exceptions.UsuarioJaVotouException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class VotoService {
@@ -47,7 +49,12 @@ public class VotoService {
                 .votacao(votacao)
                 .build();
 
-        return votoRepository.save(voto);
+        Voto salvo = votoRepository.save(voto);
+
+        log.info("Voto registrado id={} votacao={} opcao='{}' usuario={} peso={}",
+                salvo.getId(), votacao.getId(), opcaoVoto.getLivroTitulo(), usuario.getEmail(), peso);
+
+        return salvo;
     }
 
     public Voto buscarPorId(UUID id) {

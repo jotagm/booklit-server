@@ -7,6 +7,7 @@ import github.jotagm.clube_livro.domain.clube.convite.ConviteStatus;
 import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class ConviteService {
@@ -47,6 +49,9 @@ public class ConviteService {
         Usuario usuario = usuarioService.buscarPorEmail(emailUsuario);
         usuarioClubeService.adicionar(usuario, convite.getClube(), ClubePapel.MEMBRO);
 
+        log.info("Convite aceito id={} clube={} usuario={}",
+                convite.getId(), convite.getClube().getId(), emailUsuario);
+
         return conviteRepository.save(convite);
     }
 
@@ -58,6 +63,7 @@ public class ConviteService {
         }
 
         convite.setStatus(ConviteStatus.RECUSADO);
+        log.info("Convite recusado id={} clube={} usuario={}", convite.getId(), convite.getClube().getId(), emailUsuario);
         return conviteRepository.save(convite);
     }
 
@@ -81,6 +87,9 @@ public class ConviteService {
         List<Convite> vencidos = conviteRepository.findByStatusAndExpiraEmBefore(ConviteStatus.PENDENTE, LocalDateTime.now());
         vencidos.forEach(convite -> convite.setStatus(ConviteStatus.EXPIRADO));
         conviteRepository.saveAll(vencidos);
+        if (!vencidos.isEmpty()) {
+            log.info("Convites expirados automaticamente: {}", vencidos.size());
+        }
         return vencidos.size();
     }
 }

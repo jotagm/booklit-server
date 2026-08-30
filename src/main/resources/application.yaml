@@ -27,6 +27,9 @@ jwt:
 
 app:
   url: ${APP_URL:}
+  # Fuso de referencia do dominio - ver FusoHorarioConfig. Os campos LocalDateTime nao
+  # carregam fuso, entao servidor e cliente precisam concordar em um so.
+  timezone: ${APP_TIMEZONE:America/Sao_Paulo}
 
 google:
   books:
@@ -40,6 +43,18 @@ agendamento:
   votacao:
     encerramento:
       cron: "${VOTACAO_ENCERRAMENTO_CRON:0 0 * * * *}"
+
+logging:
+  level:
+    root: INFO
+    github.jotagm.clube_livro: ${LOG_LEVEL_APP:INFO}
+    # Suba para DEBUG quando precisar depurar autorizacao ou SQL.
+    org.springframework.security: ${LOG_LEVEL_SECURITY:INFO}
+    org.hibernate.SQL: ${LOG_LEVEL_SQL:INFO}
+  pattern:
+    # O [requestId] vem do MDC preenchido pelo RequestLoggingFilter e amarra
+    # todas as linhas de uma mesma requisicao.
+    console: "%clr(%d{HH:mm:ss.SSS}){faint} %clr(%5p) %clr([%X{requestId:-________}]){faint} %clr(%-40.40logger{39}){cyan} %m%n%wEx"
 
 springdoc:
   api-docs:

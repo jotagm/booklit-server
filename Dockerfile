@@ -6,6 +6,9 @@ COPY src ./src
 RUN mvn clean package -DskipTests -B
 
 FROM eclipse-temurin:21-jre-jammy
+# O FusoHorarioConfig ja ajusta a JVM, mas so depois que o contexto sobe. Definir aqui
+# tambem faz os logs de startup sairem no fuso certo, em vez de UTC.
+ENV TZ=America/Sao_Paulo
 WORKDIR /app
 RUN groupadd -r spring && useradd -r -g spring spring
 COPY --from=build /app/target/*.jar app.jar

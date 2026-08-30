@@ -7,12 +7,14 @@ import github.jotagm.clube_livro.domain.clube.UsuarioClube;
 import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class UsuarioClubeService {
@@ -27,7 +29,9 @@ public class UsuarioClubeService {
                 .entrouEm(LocalDateTime.now())
                 .build();
 
-        return usuarioClubeRepository.save(usuarioClube);
+        UsuarioClube salvo = usuarioClubeRepository.save(usuarioClube);
+        log.info("Membro adicionado clube={} usuario={} papel={}", clube.getId(), usuario.getEmail(), papel);
+        return salvo;
     }
 
     public UsuarioClube adicionarLider(Usuario usuario, Clube clube) {
@@ -58,5 +62,6 @@ public class UsuarioClubeService {
 
     public void deletar(UUID id) {
         usuarioClubeRepository.deleteById(id);
+        log.info("Membro removido vinculo={}", id);
     }
 }
