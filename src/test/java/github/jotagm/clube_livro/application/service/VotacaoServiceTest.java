@@ -1,8 +1,10 @@
 package github.jotagm.clube_livro.application.service;
 
+import github.jotagm.clube_livro.adapter.in.rest.dto.request.VotacaoRequest;
 import github.jotagm.clube_livro.adapter.out.persistence.VotacaoRepository;
 import github.jotagm.clube_livro.domain.clube.votacao.Votacao;
 import github.jotagm.clube_livro.domain.clube.votacao.VotacaoStatus;
+import github.jotagm.clube_livro.domain.exceptions.IntervaloInvalidoException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -15,7 +17,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,6 +29,9 @@ class VotacaoServiceTest {
 
     @Mock
     private VotacaoRepository votacaoRepository;
+
+    @Mock
+    private ClubeService clubeService;
 
     @InjectMocks
     private VotacaoService votacaoService;
@@ -78,7 +86,7 @@ class VotacaoServiceTest {
     @Test
     void atualizar_deveSalvarERetornarVotacaoAtualizada() {
         Votacao votacao = votacaoExemplo(UUID.randomUUID());
-        votacao.setStatus(VotacaoStatus.ENCERRADA);
+        votacao.encerrar();
         when(votacaoRepository.save(votacao)).thenReturn(votacao);
 
         Votacao resultado = votacaoService.atualizar(votacao);
@@ -94,5 +102,51 @@ class VotacaoServiceTest {
         votacaoService.deletar(id);
 
         verify(votacaoRepository).deleteById(id);
+    }
+
+    private VotacaoRequest requestCom(LocalDateTime abertura, LocalDateTime encerramento) {
+        return new VotacaoRequest(UUID.randomUUID(), abertura, encerramento);
+    }
+
+    @Test
+    void criar_deveRecusarEncerramentoAntesDaAbertura() {
+        LocalDateTime abertura = LocalDateTime.now();
+
+        assertThatThrownBy(() -> votacaoService.criar(requestCom(abertura, abertura.minusDays(1))))
+                .isInstanceOf(IntervaloInvalidoException.class);
+
+        verify(votacaoRepository, never()).save(any());
+    }
+
+    @Test
+    void criar_deveRecusarAberturaEEncerramentoIguais() {
+        LocalDateTime instante = LocalDateTime.now();
+
+        assertThatThrownBy(() -> votacaoService.criar(requestCom(instante, instante)))
+                .isInstanceOf(IntervaloInvalidoException.class);
+    }
+
+    @Test
+    void atualizar_deveRecusarIntervaloInvalido() {
+        LocalDateTime abertura = LocalDateTime.now();
+
+        assertThatThrownBy(() -> votacaoService.atualizar(UUID.randomUUID(),
+                requestCom(abertura, abertura.minusHours(1))))
+                .isInstanceOf(IntervaloInvalidoException.class);
+
+        // A validação vem antes da busca: intervalo inválido não deve nem consultar o banco.
+        verify(votacaoRepository, never()).findById(any());
+        verify(votacaoRepository, never()).save(any());
+    }
+
+    @Test
+    void criar_deveAceitarIntervaloValido() {
+        LocalDateTime abertura = LocalDateTime.now();
+        when(votacaoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThatCode(() -> votacaoService.criar(requestCom(abertura, abertura.plusDays(7))))
+                .doesNotThrowAnyException();
+
+        verify(votacaoRepository).save(any());
     }
 }

@@ -9,9 +9,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "t_registro")
-
 @Getter
-@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -31,4 +29,18 @@ public class Registro {
 
     @Column(name = "updated_at")
     LocalDateTime updatedAt;
+
+    public void registrarProgresso(int valorAtual) {
+        this.valorAtual = valorAtual;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public static Registro iniciar(LeituraClube leituraClube, Usuario usuario) {
+        return Registro.builder()
+                .leituraClube(leituraClube)
+                .usuario(usuario)
+                .valorAtual(0)
+                .updatedAt(LocalDateTime.now())
+                .build();
+    }
 }

@@ -42,19 +42,14 @@ class ComentarioServiceTest {
     private ComentarioService comentarioService;
 
     private Usuario usuarioExemplo() {
-        Usuario usuario = new Usuario();
-        usuario.setId(UUID.randomUUID());
-        usuario.setNome("Leitor");
-        return usuario;
+        return Usuario.builder().id(UUID.randomUUID()).nome("Leitor").build();
     }
 
     private LeituraClube leituraExemplo(UUID clubeId) {
-        Clube clube = new Clube();
-        clube.setId(clubeId);
-        LeituraClube leitura = new LeituraClube();
-        leitura.setId(UUID.randomUUID());
-        leitura.setClube(clube);
-        return leitura;
+        return LeituraClube.builder()
+                .id(UUID.randomUUID())
+                .clube(Clube.builder().id(clubeId).build())
+                .build();
     }
 
     private UsuarioClube vinculo(ClubePapel papel) {
@@ -167,7 +162,7 @@ class ComentarioServiceTest {
     void editar_deveLancarExcecaoQuandoComentarioRemovido() {
         Usuario autor = usuarioExemplo();
         Comentario comentario = comentarioExemplo(autor, leituraExemplo(UUID.randomUUID()), null);
-        comentario.setRemovido(true);
+        comentario.remover();
         ComentarioAtualizarRequest request = new ComentarioAtualizarRequest("Editado");
 
         when(comentarioRepository.findById(comentario.getId())).thenReturn(Optional.of(comentario));

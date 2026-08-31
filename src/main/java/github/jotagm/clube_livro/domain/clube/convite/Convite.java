@@ -10,9 +10,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "t_convite")
-
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -39,4 +37,36 @@ public class Convite {
 
     @Column(name = "created_at")
     LocalDateTime createdAt;
+
+    public void aceitar() {
+        this.status = ConviteStatus.ACEITO;
+    }
+
+    public void recusar() {
+        this.status = ConviteStatus.RECUSADO;
+    }
+
+    public void expirar() {
+        this.status = ConviteStatus.EXPIRADO;
+    }
+
+    public boolean estaExpirado(LocalDateTime momento) {
+        return expiraEm.isBefore(momento);
+    }
+
+    public boolean pertenceA(String email) {
+        return emailDestinatario.equals(email);
+    }
+
+    public static Convite novo(Clube clube, Usuario convidadoPor, String emailDestinatario,
+                               LocalDateTime expiraEm) {
+        return Convite.builder()
+                .clube(clube)
+                .convidadoPor(convidadoPor)
+                .emailDestinatario(emailDestinatario)
+                .status(ConviteStatus.PENDENTE)
+                .expiraEm(expiraEm)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
 }

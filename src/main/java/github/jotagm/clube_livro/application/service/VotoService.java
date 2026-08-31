@@ -38,21 +38,11 @@ public class VotoService {
 
         UsuarioClube usuarioClube = usuarioClubeService.buscarPorUsuarioEClube(usuario.getId(), votacao.getClube().getId());
 
-        int peso = switch (usuarioClube.getPapel()) {
-            case LIDER -> 2;
-            case MEMBRO -> 1;
-        };
-        Voto voto = Voto.builder()
-                .opcaoVoto(opcaoVoto)
-                .usuario(usuario)
-                .peso(peso)
-                .votacao(votacao)
-                .build();
-
-        Voto salvo = votoRepository.save(voto);
+        Voto salvo = votoRepository.save(
+                Voto.registrar(votacao, opcaoVoto, usuario, usuarioClube.getPapel()));
 
         log.info("Voto registrado id={} votacao={} opcao='{}' usuario={} peso={}",
-                salvo.getId(), votacao.getId(), opcaoVoto.getLivroTitulo(), usuario.getEmail(), peso);
+                salvo.getId(), votacao.getId(), opcaoVoto.getLivroTitulo(), usuario.getEmail(), salvo.getPeso());
 
         return salvo;
     }

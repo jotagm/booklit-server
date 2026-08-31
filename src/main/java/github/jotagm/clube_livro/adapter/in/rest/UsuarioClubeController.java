@@ -71,7 +71,7 @@ public class UsuarioClubeController {
     public ResponseEntity<UsuarioClubeResponse> atualizar(@PathVariable UUID id,
                                                           @RequestBody @Valid UsuarioClubeRequest request) {
         UsuarioClube uc = usuarioClubeService.buscarPorId(id);
-        uc.setPapel(request.papel());
+        uc.mudarPapel(request.papel());
 
         return ResponseEntity.ok(UsuarioClubeResponse.from(usuarioClubeService.atualizar(uc)));
     }

@@ -9,11 +9,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "t_leitura_clube")
-
-
 @Builder
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class LeituraClube {
@@ -45,4 +42,41 @@ public class LeituraClube {
 
     @Column(name = "data_fim")
     LocalDateTime dataFim;
+
+    public void redefinir(String livroGoogleId, String livroTitulo, String livroCapaUrl,
+                          TipoMeta tipoMeta, int valorMeta,
+                          LocalDateTime dataInicio, LocalDateTime dataFim) {
+        this.livroGoogleId = livroGoogleId;
+        this.livroTitulo = livroTitulo;
+        this.livroCapaUrl = livroCapaUrl;
+        this.tipoMeta = tipoMeta;
+        this.valorMeta = valorMeta;
+        this.dataInicio = dataInicio;
+        this.dataFim = dataFim;
+    }
+
+    public static LeituraClube iniciar(Clube clube, String livroGoogleId, String livroTitulo,
+                                       String livroCapaUrl, TipoMeta tipoMeta, int valorMeta,
+                                       LocalDateTime dataInicio, LocalDateTime dataFim) {
+        return LeituraClube.builder()
+                .clube(clube)
+                .livroGoogleId(livroGoogleId)
+                .livroTitulo(livroTitulo)
+                .livroCapaUrl(livroCapaUrl)
+                .tipoMeta(tipoMeta)
+                .valorMeta(valorMeta)
+                .dataInicio(dataInicio)
+                .dataFim(dataFim)
+                .build();
+    }
+
+    public static LeituraClube doLivroVencedor(Clube clube, String livroGoogleId,
+                                               String livroTitulo, String livroCapaUrl) {
+        return LeituraClube.builder()
+                .clube(clube)
+                .livroGoogleId(livroGoogleId)
+                .livroTitulo(livroTitulo)
+                .livroCapaUrl(livroCapaUrl)
+                .build();
+    }
 }

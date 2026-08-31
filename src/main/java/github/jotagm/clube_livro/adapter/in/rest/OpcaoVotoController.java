@@ -34,12 +34,12 @@ public class OpcaoVotoController {
     @ApiResponse(responseCode = "404", description = "Votação ou usuário sugerinte não encontrado")
     @PostMapping
     public ResponseEntity<OpcaoVotoResponse> criar(@RequestBody @Valid OpcaoVotoRequest request) {
-        OpcaoVoto opcaoVoto = new OpcaoVoto();
-        opcaoVoto.setVotacao(votacaoService.buscarPorId(request.votacaoId()));
-        opcaoVoto.setSugeridoPor(usuarioService.buscarPorId(request.sugeridoPorId()));
-        opcaoVoto.setLivroGoogleId(request.livroGoogleId());
-        opcaoVoto.setLivroTitulo(request.livroTitulo());
-        opcaoVoto.setLivroCapaUrl(request.livroCapaUrl());
+        OpcaoVoto opcaoVoto = OpcaoVoto.sugerir(
+                votacaoService.buscarPorId(request.votacaoId()),
+                usuarioService.buscarPorId(request.sugeridoPorId()),
+                request.livroGoogleId(),
+                request.livroTitulo(),
+                request.livroCapaUrl());
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(OpcaoVotoResponse.from(opcaoVotoService.salvar(opcaoVoto)));
@@ -80,9 +80,7 @@ public class OpcaoVotoController {
     public ResponseEntity<OpcaoVotoResponse> atualizar(@Parameter(description = "Id da opção de voto") @PathVariable UUID id,
                                                        @RequestBody @Valid OpcaoVotoRequest request) {
         OpcaoVoto opcaoVoto = opcaoVotoService.buscarPorId(id);
-        opcaoVoto.setLivroGoogleId(request.livroGoogleId());
-        opcaoVoto.setLivroTitulo(request.livroTitulo());
-        opcaoVoto.setLivroCapaUrl(request.livroCapaUrl());
+        opcaoVoto.trocarLivro(request.livroGoogleId(), request.livroTitulo(), request.livroCapaUrl());
 
         return ResponseEntity.ok(OpcaoVotoResponse.from(opcaoVotoService.atualizar(opcaoVoto)));
     }

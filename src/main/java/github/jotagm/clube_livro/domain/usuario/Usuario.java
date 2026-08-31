@@ -2,17 +2,16 @@ package github.jotagm.clube_livro.domain.usuario;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import java.util.UUID;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "t_usuario")
-
 @Getter
-@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Usuario {
@@ -26,4 +25,22 @@ public class Usuario {
     String senhaHash;
     @Column(name = "created_at")
     LocalDateTime createdAt;
+
+    public void atualizarDados(String nome, String email) {
+        this.nome = nome;
+        this.email = email;
+    }
+
+    public void definirSenhaHash(String senhaHash) {
+        this.senhaHash = senhaHash;
+    }
+
+    public static Usuario novo(String nome, String email, String senha) {
+        return Usuario.builder()
+                .nome(nome)
+                .email(email)
+                .senhaHash(senha)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
 }

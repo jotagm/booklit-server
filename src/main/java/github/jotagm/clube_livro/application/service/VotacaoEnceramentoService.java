@@ -62,15 +62,14 @@ public class VotacaoEnceramentoService {
 
         OpcaoVoto vencedora = opcaoPorId.get(desempatar(opcoesEmpatadas, votos));
 
-        votacao.setStatus(ENCERRADA);
+        votacao.encerrar();
         votacaoService.atualizar(votacao);
 
-        LeituraClube leituraClube = LeituraClube.builder()
-                .clube(votacao.getClube())
-                .livroGoogleId(vencedora.getLivroGoogleId())
-                .livroTitulo(vencedora.getLivroTitulo())
-                .livroCapaUrl(vencedora.getLivroCapaUrl())
-                .build();
+        LeituraClube leituraClube = LeituraClube.doLivroVencedor(
+                votacao.getClube(),
+                vencedora.getLivroGoogleId(),
+                vencedora.getLivroTitulo(),
+                vencedora.getLivroCapaUrl());
 
         return leituraClubeService.salvar(leituraClube);
     }

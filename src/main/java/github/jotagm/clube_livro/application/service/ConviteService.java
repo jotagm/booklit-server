@@ -37,14 +37,14 @@ public class ConviteService {
     public Convite aceitarConvite(UUID id, String emailUsuario) {
         Convite convite = buscarPorId(id);
 
-        if (!convite.getEmailDestinatario().equals(emailUsuario)) {
+        if (!convite.pertenceA(emailUsuario)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso negado");
         }
-        if(convite.getExpiraEm().isBefore(LocalDateTime.now())) {
+        if (convite.estaExpirado(LocalDateTime.now())) {
             throw new ResponseStatusException(HttpStatus.GONE, "Convite expirado");
         }
 
-        convite.setStatus(ConviteStatus.ACEITO);
+        convite.aceitar();
 
         Usuario usuario = usuarioService.buscarPorEmail(emailUsuario);
         usuarioClubeService.adicionar(usuario, convite.getClube(), ClubePapel.MEMBRO);
@@ -58,11 +58,11 @@ public class ConviteService {
     public Convite rejeitarConvite(UUID id, String emailUsuario) {
         Convite convite = buscarPorId(id);
 
-        if (!convite.getEmailDestinatario().equals(emailUsuario)) {
+        if (!convite.pertenceA(emailUsuario)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso negado");
         }
 
-        convite.setStatus(ConviteStatus.RECUSADO);
+        convite.recusar();
         log.info("Convite recusado id={} clube={} usuario={}", convite.getId(), convite.getClube().getId(), emailUsuario);
         return conviteRepository.save(convite);
     }
@@ -85,7 +85,7 @@ public class ConviteService {
 
     public int expirarVencidos() {
         List<Convite> vencidos = conviteRepository.findByStatusAndExpiraEmBefore(ConviteStatus.PENDENTE, LocalDateTime.now());
-        vencidos.forEach(convite -> convite.setStatus(ConviteStatus.EXPIRADO));
+        vencidos.forEach(Convite::expirar);
         conviteRepository.saveAll(vencidos);
         if (!vencidos.isEmpty()) {
             log.info("Convites expirados automaticamente: {}", vencidos.size());

@@ -91,7 +91,7 @@ class ConviteServiceTest {
     @Test
     void atualizar_deveSalvarERetornarConviteAtualizado() {
         Convite convite = conviteExemplo(UUID.randomUUID());
-        convite.setStatus(ConviteStatus.ACEITO);
+        convite.aceitar();
         when(conviteRepository.save(convite)).thenReturn(convite);
 
         Convite resultado = conviteService.atualizar(convite);

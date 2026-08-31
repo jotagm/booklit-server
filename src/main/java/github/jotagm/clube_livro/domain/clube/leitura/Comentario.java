@@ -6,16 +6,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "t_comentario")
-
 @Getter
-@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -46,4 +43,22 @@ public class Comentario {
 
     @Column(name = "updated_at")
     LocalDateTime updatedAt;
+
+    public void editar(String conteudo) {
+        this.conteudo = conteudo;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void remover() {
+        this.removido = true;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public boolean ehResposta() {
+        return comentarioPai != null;
+    }
+
+    public boolean foiEscritoPor(Usuario usuario) {
+        return this.usuario.getId().equals(usuario.getId());
+    }
 }

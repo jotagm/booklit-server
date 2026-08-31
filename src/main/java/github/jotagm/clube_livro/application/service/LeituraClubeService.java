@@ -34,29 +34,20 @@ public class LeituraClubeService {
     public LeituraClube criar(LeituraClubeRequest request) {
         validarIntervalo(request);
 
-        LeituraClube leitura = LeituraClube.builder()
-                .clube(clubeService.buscarPorId(request.clubeId()))
-                .livroGoogleId(request.livroGoogleId())
-                .livroTitulo(request.livroTitulo())
-                .livroCapaUrl(request.livroCapaUrl())
-                .tipoMeta(request.tipoMeta())
-                .valorMeta(request.valorMeta())
-                .dataInicio(request.dataInicio())
-                .dataFim(request.dataFim())
-                .build();
+        LeituraClube leitura = LeituraClube.iniciar(
+                clubeService.buscarPorId(request.clubeId()),
+                request.livroGoogleId(),
+                request.livroTitulo(),
+                request.livroCapaUrl(),
+                request.tipoMeta(),
+                request.valorMeta(),
+                request.dataInicio(),
+                request.dataFim());
 
         LeituraClube leituraSalva = leituraClubeRepository.save(leitura);
 
         List<UsuarioClube> membros = usuarioClubeService.listarPorClube(request.clubeId());
-        membros.forEach(uc -> {
-            Registro registro = Registro.builder()
-                    .leituraClube(leituraSalva)
-                    .usuario(uc.getUsuario())
-                    .valorAtual(0)
-                    .updatedAt(LocalDateTime.now())
-                    .build();
-            registroService.salvar(registro);
-        });
+        membros.forEach(uc -> registroService.salvar(Registro.iniciar(leituraSalva, uc.getUsuario())));
 
         log.info("Leitura criada id={} clube={} livro='{}' meta={} {} registros={}",
                 leituraSalva.getId(), request.clubeId(), leituraSalva.getLivroTitulo(),
@@ -78,13 +69,14 @@ public class LeituraClubeService {
         validarIntervalo(request);
 
         LeituraClube leitura = buscarPorId(id);
-        leitura.setLivroGoogleId(request.livroGoogleId());
-        leitura.setLivroTitulo(request.livroTitulo());
-        leitura.setLivroCapaUrl(request.livroCapaUrl());
-        leitura.setTipoMeta(request.tipoMeta());
-        leitura.setValorMeta(request.valorMeta());
-        leitura.setDataInicio(request.dataInicio());
-        leitura.setDataFim(request.dataFim());
+        leitura.redefinir(
+                request.livroGoogleId(),
+                request.livroTitulo(),
+                request.livroCapaUrl(),
+                request.tipoMeta(),
+                request.valorMeta(),
+                request.dataInicio(),
+                request.dataFim());
         return leituraClubeRepository.save(leitura);
     }
 

@@ -33,11 +33,7 @@ public class UsuarioController {
     @SecurityRequirements
     @PostMapping
     public ResponseEntity<UsuarioResponse> criar(@RequestBody @Valid UsuarioRequest request) {
-        Usuario usuario = new Usuario();
-        usuario.setNome(request.nome());
-        usuario.setEmail(request.email());
-        usuario.setSenhaHash(request.senha());
-        usuario.setCreatedAt(LocalDateTime.now());
+        Usuario usuario = Usuario.novo(request.nome(), request.email(), request.senha());
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(UsuarioResponse.from(usuarioService.salvar(usuario)));
@@ -71,11 +67,6 @@ public class UsuarioController {
     public ResponseEntity<UsuarioResponse> atualizar(
             @Parameter(description = "Id do usuário") @PathVariable UUID id,
             @RequestBody @Valid UsuarioRequest request) {
-        Usuario usuario = usuarioService.buscarPorId(id);
-        usuario.setNome(request.nome());
-        usuario.setEmail(request.email());
-        usuario.setSenhaHash(request.senha());
-
-        return ResponseEntity.ok(UsuarioResponse.from(usuarioService.atualizar(usuario)));
+        return ResponseEntity.ok(UsuarioResponse.from(usuarioService.atualizar(id, request)));
     }
 }

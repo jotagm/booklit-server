@@ -92,15 +92,13 @@ public class ClubeController {
             @Parameter(description = "Id do clube") @PathVariable UUID id,
             @RequestBody @Valid ClubeRequest request) {
         Clube clube = clubeService.buscarPorId(id);
-        clube.setNome(request.nome());
-        clube.setDescricao(request.descricao());
-        clube.setPrivado(request.privado());
-
-        if (request.temaIds() != null) {
-            clube.setTemas(request.temaIds().stream()
-                    .map(temaService::buscarPorId)
-                    .toList());
-        }
+        clube.atualizarDados(
+                request.nome(),
+                request.descricao(),
+                request.privado(),
+                request.temaIds() != null
+                        ? request.temaIds().stream().map(temaService::buscarPorId).toList()
+                        : null);
 
         return ResponseEntity.ok(ClubeResponse.from(clubeService.atualizar(clube)));
     }

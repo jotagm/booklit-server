@@ -2,17 +2,16 @@ package github.jotagm.clube_livro.domain.tema;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.util.UUID;
 
 @Entity
 @Table(name = "t_tema")
-
 @Getter
-@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Tema {
@@ -22,4 +21,12 @@ public class Tema {
 
     @Column(unique = true)
     String nome;
+
+    public void renomear(String nome) {
+        this.nome = nome;
+    }
+
+    public static Tema novo(String nome) {
+        return Tema.builder().nome(nome).build();
+    }
 }

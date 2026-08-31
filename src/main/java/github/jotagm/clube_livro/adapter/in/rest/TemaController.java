@@ -30,11 +30,8 @@ public class TemaController {
     @ApiResponse(responseCode = "201", description = "Tema criado")
     @PostMapping
     public ResponseEntity<TemaResponse> criar(@RequestBody @Valid TemaRequest request) {
-        Tema tema = new Tema();
-        tema.setNome(request.nome());
-
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(TemaResponse.from(temaService.salvar(tema)));
+                .body(TemaResponse.from(temaService.salvar(Tema.novo(request.nome()))));
     }
 
     @Operation(
@@ -73,7 +70,7 @@ public class TemaController {
             @Parameter(description = "Id do tema") @PathVariable UUID id,
             @RequestBody @Valid TemaRequest request) {
         Tema tema = temaService.buscarPorId(id);
-        tema.setNome(request.nome());
+        tema.renomear(request.nome());
 
         return ResponseEntity.ok(TemaResponse.from(temaService.atualizar(tema)));
     }

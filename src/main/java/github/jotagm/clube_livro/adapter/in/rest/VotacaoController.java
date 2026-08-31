@@ -3,12 +3,9 @@ package github.jotagm.clube_livro.adapter.in.rest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.VotacaoRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.LeituraClubeResponse;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.VotacaoResponse;
-import github.jotagm.clube_livro.application.service.ClubeService;
 import github.jotagm.clube_livro.application.service.VotacaoEnceramentoService;
 import github.jotagm.clube_livro.application.service.VotacaoService;
 import github.jotagm.clube_livro.configs.RequireLider;
-import github.jotagm.clube_livro.domain.clube.votacao.Votacao;
-import github.jotagm.clube_livro.domain.clube.votacao.VotacaoStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -29,7 +26,6 @@ import java.util.UUID;
 public class VotacaoController {
 
     private final VotacaoService votacaoService;
-    private final ClubeService clubeService;
     private final VotacaoEnceramentoService votacaoEnceramentoService;
 
     @Operation(
@@ -38,17 +34,12 @@ public class VotacaoController {
     @ApiResponse(responseCode = "201", description = "Votação criada")
     @ApiResponse(responseCode = "403", description = "O usuário autenticado não é líder do clube")
     @ApiResponse(responseCode = "404", description = "Clube não encontrado")
+    @ApiResponse(responseCode = "422", description = "`dataEncerramento` não é posterior a `dataAbertura`")
     @PostMapping
     @RequireLider("#request.clubeId()")
     public ResponseEntity<VotacaoResponse> criar(@RequestBody @Valid VotacaoRequest request) {
-        Votacao votacao = new Votacao();
-        votacao.setClube(clubeService.buscarPorId(request.clubeId()));
-        votacao.setStatus(VotacaoStatus.ABERTA);
-        votacao.setDataAbertura(request.dataAbertura());
-        votacao.setDataEncerramento(request.dataEncerramento());
-
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(VotacaoResponse.from(votacaoService.salvar(votacao)));
+                .body(VotacaoResponse.from(votacaoService.criar(request)));
     }
 
     @Operation(summary = "Busca uma votação por id")
@@ -73,14 +64,11 @@ public class VotacaoController {
             description = "`clubeId` no corpo é ignorado: a votação permanece no clube em que foi criada.")
     @ApiResponse(responseCode = "200", description = "Votação atualizada")
     @ApiResponse(responseCode = "404", description = "Votação não encontrada")
+    @ApiResponse(responseCode = "422", description = "`dataEncerramento` não é posterior a `dataAbertura`")
     @PutMapping("/{id}")
     public ResponseEntity<VotacaoResponse> atualizar(@Parameter(description = "Id da votação") @PathVariable UUID id,
                                                      @RequestBody @Valid VotacaoRequest request) {
-        Votacao votacao = votacaoService.buscarPorId(id);
-        votacao.setDataAbertura(request.dataAbertura());
-        votacao.setDataEncerramento(request.dataEncerramento());
-
-        return ResponseEntity.ok(VotacaoResponse.from(votacaoService.atualizar(votacao)));
+        return ResponseEntity.ok(VotacaoResponse.from(votacaoService.atualizar(id, request)));
     }
 
     @Operation(summary = "Remove uma votação")

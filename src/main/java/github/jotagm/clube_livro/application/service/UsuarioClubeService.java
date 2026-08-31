@@ -22,14 +22,7 @@ public class UsuarioClubeService {
     private final UsuarioClubeRepository usuarioClubeRepository;
 
     public UsuarioClube adicionar(Usuario usuario, Clube clube, ClubePapel papel) {
-        UsuarioClube usuarioClube = UsuarioClube.builder()
-                .usuario(usuario)
-                .clube(clube)
-                .papel(papel)
-                .entrouEm(LocalDateTime.now())
-                .build();
-
-        UsuarioClube salvo = usuarioClubeRepository.save(usuarioClube);
+        UsuarioClube salvo = usuarioClubeRepository.save(UsuarioClube.novo(usuario, clube, papel));
         log.info("Membro adicionado clube={} usuario={} papel={}", clube.getId(), usuario.getEmail(), papel);
         return salvo;
     }

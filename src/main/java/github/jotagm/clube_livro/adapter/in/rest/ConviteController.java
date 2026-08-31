@@ -44,13 +44,12 @@ public class ConviteController {
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody @Valid ConviteRequest request) {
         var usuarioConvite = usuarioService.buscarPorEmail(userDetails.getUsername());
-        Convite convite = new Convite();
-        convite.setClube(clubeService.buscarPorId(request.clubeId()));
-        convite.setConvidadoPor(usuarioConvite);
-        convite.setEmailDestinatario(request.emailDestinatario());
-        convite.setStatus(ConviteStatus.PENDENTE);
-        convite.setExpiraEm(request.expiraEm());
-        convite.setCreatedAt(LocalDateTime.now());
+
+        Convite convite = Convite.novo(
+                clubeService.buscarPorId(request.clubeId()),
+                usuarioConvite,
+                request.emailDestinatario(),
+                request.expiraEm());
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ConviteResponse.from(conviteService.salvar(convite)));

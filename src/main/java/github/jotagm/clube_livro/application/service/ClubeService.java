@@ -26,16 +26,13 @@ public class ClubeService {
     private final UsuarioClubeService usuarioClubeService;
 
     public Clube criar(ClubeRequest request, Usuario criador) {
-        Clube clube = Clube.builder()
-                .nome(request.nome())
-                .descricao(request.descricao())
-                .privado(request.privado())
-                .status(ClubeStatus.ATIVO)
-                .createdAt(LocalDateTime.now())
-                .temas(request.temaIds() != null
+        Clube clube = Clube.novo(
+                request.nome(),
+                request.descricao(),
+                request.privado(),
+                request.temaIds() != null
                         ? request.temaIds().stream().map(temaService::buscarPorId).toList()
-                        : null)
-                .build();
+                        : null);
 
         Clube clubeSalvo = clubeRepository.save(clube);
         usuarioClubeService.adicionarLider(criador, clubeSalvo);

@@ -40,12 +40,12 @@ class VotacaoEnceramentoServiceTest {
     private VotacaoEnceramentoService votacaoEnceramentoService;
 
     private OpcaoVoto opcaoExemplo(String titulo) {
-        OpcaoVoto opcao = new OpcaoVoto();
-        opcao.setId(UUID.randomUUID());
-        opcao.setLivroTitulo(titulo);
-        opcao.setLivroGoogleId("google-" + titulo);
-        opcao.setLivroCapaUrl("capa-" + titulo);
-        return opcao;
+        return OpcaoVoto.builder()
+                .id(UUID.randomUUID())
+                .livroTitulo(titulo)
+                .livroGoogleId("google-" + titulo)
+                .livroCapaUrl("capa-" + titulo)
+                .build();
     }
 
     private Voto votoExemplo(OpcaoVoto opcao, int peso) {
@@ -53,11 +53,11 @@ class VotacaoEnceramentoServiceTest {
     }
 
     private Votacao votacaoExemplo(UUID id) {
-        Votacao votacao = new Votacao();
-        votacao.setId(id);
-        votacao.setClube(new Clube());
-        votacao.setStatus(VotacaoStatus.ABERTA);
-        return votacao;
+        return Votacao.builder()
+                .id(id)
+                .clube(new Clube())
+                .status(VotacaoStatus.ABERTA)
+                .build();
     }
 
     @Test

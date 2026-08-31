@@ -133,7 +133,7 @@ class UsuarioClubeServiceTest {
     @Test
     void atualizar_deveSalvarERetornarMembroAtualizado() {
         UsuarioClube membro = membroExemplo(UUID.randomUUID());
-        membro.setPapel(ClubePapel.LIDER);
+        membro.mudarPapel(ClubePapel.LIDER);
         when(usuarioClubeRepository.save(membro)).thenReturn(membro);
 
         UsuarioClube resultado = usuarioClubeService.atualizar(membro);

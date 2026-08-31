@@ -52,8 +52,7 @@ public class RegistroService {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "O progresso não pode ultrapassar a meta da leitura");
         }
 
-        registro.setValorAtual(novoValor);
-        registro.setUpdatedAt(LocalDateTime.now());
+        registro.registrarProgresso(novoValor);
         return registroRepository.save(registro);
     }
 }

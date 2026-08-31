@@ -71,8 +71,7 @@ public class ComentarioService {
             throw new AcessoNegadoException("Acesso negado: apenas o autor pode editar este comentário");
         }
 
-        comentario.setConteudo(request.conteudo());
-        comentario.setUpdatedAt(LocalDateTime.now());
+        comentario.editar(request.conteudo());
         return comentarioRepository.save(comentario);
     }
 
@@ -86,7 +85,7 @@ public class ComentarioService {
             throw new AcessoNegadoException("Acesso negado: apenas o autor ou o líder do clube podem remover este comentário");
         }
 
-        comentario.setRemovido(true);
+        comentario.remover();
         comentarioRepository.save(comentario);
     }
 

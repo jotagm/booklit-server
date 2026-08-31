@@ -9,10 +9,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "t_votacao")
-
 @Builder
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Votacao {
@@ -31,4 +29,22 @@ public class Votacao {
 
     @Column(name = "data_encerramento")
     LocalDateTime dataEncerramento;
+
+    public void encerrar() {
+        this.status = VotacaoStatus.ENCERRADA;
+    }
+
+    public void reagendar(LocalDateTime dataAbertura, LocalDateTime dataEncerramento) {
+        this.dataAbertura = dataAbertura;
+        this.dataEncerramento = dataEncerramento;
+    }
+
+    public static Votacao abrir(Clube clube, LocalDateTime dataAbertura, LocalDateTime dataEncerramento) {
+        return Votacao.builder()
+                .clube(clube)
+                .status(VotacaoStatus.ABERTA)
+                .dataAbertura(dataAbertura)
+                .dataEncerramento(dataEncerramento)
+                .build();
+    }
 }
