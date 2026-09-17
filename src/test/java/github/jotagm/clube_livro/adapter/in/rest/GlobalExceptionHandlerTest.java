@@ -77,16 +77,22 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void erroDeNegocioMantemOStatusDeDominio() throws Exception {
+    void emailJaCadastradoRetorna409ComMensagemUtil() throws Exception {
         // Usuário criado com sucesso é 201; o mesmo e-mail de novo estoura violação de
-        // unicidade, que chega embrulhada em DataIntegrityViolationException.
+        // unicidade, que chega embrulhada em DataIntegrityViolationException. Sem um handler
+        // para ela isto virava 500 com "Erro interno", e a tela de cadastro não tinha como
+        // dizer ao usuário o que estava errado.
         String corpo = "{\"nome\":\"Fulano\",\"email\":\"dup@teste.dev\",\"senha\":\"senha12345\"}";
 
         mockMvc.perform(post("/usuarios").contentType(APPLICATION_JSON).content(corpo))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/usuarios").contentType(APPLICATION_JSON).content(corpo))
-                .andExpect(status().is5xxServerError())
-                .andExpect(jsonPath("$.status").value(500));
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.mensagem").value(containsString("e-mail")))
+                // O corpo não pode vazar o nome da constraint nem o valor que colidiu.
+                .andExpect(jsonPath("$.mensagem").value(not(containsString("dup@teste.dev"))))
+                .andExpect(jsonPath("$.mensagem").value(not(containsString("constraint"))));
     }
 }

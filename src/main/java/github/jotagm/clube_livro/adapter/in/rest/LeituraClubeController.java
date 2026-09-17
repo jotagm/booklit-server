@@ -3,6 +3,7 @@ package github.jotagm.clube_livro.adapter.in.rest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.LeituraClubeRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.GoogleBooksResponse;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.LeituraClubeResponse;
+import github.jotagm.clube_livro.adapter.out.client.CampoDeBusca;
 import github.jotagm.clube_livro.adapter.out.client.GoogleBooksClient;
 import github.jotagm.clube_livro.application.service.LeituraClubeService;
 import github.jotagm.clube_livro.configs.RequireLider;
@@ -15,6 +16,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -110,14 +112,33 @@ public class LeituraClubeController {
             description = """
                     Proxy para a API do Google Books, usada para preencher `livroGoogleId`,
                     `livroTitulo` e `livroCapaUrl` ao criar uma leitura ou opção de voto.
+
+                    Sem `idioma`, a busca disputa relevância com o catálogo inteiro e as edições
+                    em inglês dominam o topo — procurar por "Duna" não traz a edição brasileira.
+                    Informe `pt` para restringir às edições em português.
                     """)
     @ApiResponse(responseCode = "200", description = "Resultado da busca")
+    @ApiResponse(responseCode = "400", description = "Nenhum termo informado")
     @ApiResponse(responseCode = "502", description = "A API do Google Books está indisponível")
     @GetMapping("/livros/buscar")
     public GoogleBooksResponse buscarLivroGoogle(
-            @Parameter(description = "Título a pesquisar", example = "Duna") @RequestParam String titulo,
+            @Parameter(description = "Termo a pesquisar", example = "Duna")
+            @RequestParam(required = false) String termo,
+            @Parameter(description = "Nome antigo de `termo`, mantido para não quebrar clientes já publicados.")
+            @Deprecated @RequestParam(required = false) String titulo,
+            @Parameter(description = "Onde procurar o termo") @RequestParam(defaultValue = "TUDO") CampoDeBusca campo,
             @Parameter(description = "Página do resultado (base zero)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Quantidade de resultados por página") @RequestParam(defaultValue = "10") int size) {
-        return googleBooksClient.buscarLivroGoogleBooks(titulo, page, size);
+            @Parameter(description = "Quantidade de resultados por página") @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Código ISO-639-1 do idioma (ex: pt). Vazio busca em todos.", example = "pt")
+            @RequestParam(required = false) String idioma) {
+
+        // `titulo` era o nome do parâmetro antes de a busca aceitar autor e ISBN. Aceitar os
+        // dois evita que um deploy do backend na frente do front derrube a busca em produção.
+        String consultado = termo != null && !termo.isBlank() ? termo : titulo;
+        if (consultado == null || consultado.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe um termo para buscar");
+        }
+
+        return googleBooksClient.buscarLivroGoogleBooks(consultado, campo, page, size, idioma);
     }
 }

@@ -7,6 +7,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -24,13 +29,35 @@ public class GoogleBooksClient {
         this.restClient = restClient;
     }
 
-    public GoogleBooksResponse buscarLivroGoogleBooks(String title, int page, int size) {
+    /**
+     * @param campo  onde procurar o termo; nulo equivale a {@link CampoDeBusca#TUDO}.
+     * @param idioma código ISO-639-1 para o {@code langRestrict} do Google Books ("pt" cobre
+     *               as edições brasileiras). Em branco ou nulo, busca em todos os idiomas.
+     */
+    public GoogleBooksResponse buscarLivroGoogleBooks(String title, CampoDeBusca campo, int page, int size,
+                                                      String idioma) {
+        String consulta = (campo == null ? CampoDeBusca.TUDO : campo).consultaPara(title);
+
+        // Montar a URI aqui, em vez de concatenar o template, é o que permite omitir o
+        // langRestrict quando ninguém pediu idioma - e deixa o encode de acento explícito.
+        URI uri = UriComponentsBuilder.fromUriString(url)
+                .queryParam("q", consulta)
+                .queryParam("startIndex", page * size)
+                .queryParam("maxResults", size)
+                .queryParam("orderBy", "relevance")
+                .queryParam("printType", "books")
+                .queryParamIfPresent("langRestrict",
+                        Optional.ofNullable(idioma).filter(valor -> !valor.isBlank()))
+                .queryParam("key", apiKey)
+                .encode(StandardCharsets.UTF_8)
+                .build()
+                .toUri();
+
         GoogleBooksResponse response;
 
         try {
             response = restClient.get()
-                    .uri(url + "?q={title}&startIndex={startIndex}&maxResults={maxResults}&orderBy=relevance&printType=books&key={key}",
-                            title, page * size, size, apiKey)
+                    .uri(uri)
                     .retrieve()
                     .body(GoogleBooksResponse.class);
         } catch (RestClientException ex) {
@@ -46,7 +73,9 @@ public class GoogleBooksClient {
         // O objeto inteiro em INFO despejava dezenas de linhas por busca; o que interessa
         // no dia a dia é se a chamada voltou e com quantos resultados.
         int encontrados = response.items() == null ? 0 : response.items().size();
-        log.info("Google Books: '{}' pagina={} retornou {} resultado(s)", title, page, encontrados);
+        log.info("Google Books: q='{}' idioma={} pagina={} retornou {} de {} resultado(s)",
+                consulta, idioma == null || idioma.isBlank() ? "todos" : idioma, page, encontrados,
+                response.totalItems() == null ? "?" : response.totalItems());
         log.debug("Resposta completa do Google Books: {}", response);
 
         return response;

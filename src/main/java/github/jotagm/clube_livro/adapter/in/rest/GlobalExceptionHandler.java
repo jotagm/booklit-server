@@ -10,6 +10,7 @@ import github.jotagm.clube_livro.domain.exceptions.UsuarioJaVotouException;
 import github.jotagm.clube_livro.domain.exceptions.VotacaoSemVotosException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -20,11 +21,22 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    /**
+     * Identifica a coluna que estourou a constraint, não o valor.
+     *
+     * <p>Casa tanto com o Postgres ({@code Key (email)=(...)}) quanto com o H2 usado nos
+     * testes ({@code T_USUARIO(EMAIL NULLS FIRST)}). Exigir que "email" venha logo depois do
+     * parêntese é o que evita confundir com o valor que colidiu — ali o parêntese é seguido
+     * do e-mail em si, como em {@code =(fulano@email.com)}.
+     */
+    private static final Pattern COLUNA_EMAIL = Pattern.compile("\\(\\s*email\\b", Pattern.CASE_INSENSITIVE);
 
     @ExceptionHandler(RecursoNaoEncontradoException.class)
     public ResponseEntity<ErroResponse> tratarRecursoNaoEncontrado(RecursoNaoEncontradoException ex,
@@ -104,6 +116,31 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(new ErroResponse(HttpStatus.UNAUTHORIZED.value(),
                         "E-mail ou senha inválidos", LocalDateTime.now()));
+    }
+
+    /**
+     * Violação de constraint do banco — e-mail repetido no cadastro, por exemplo — vira 409
+     * em vez do 500 que a rede de segurança abaixo daria.
+     *
+     * <p>O tratamento fica aqui, e não numa checagem antes de salvar, porque quem de fato
+     * garante a unicidade é a constraint: dois cadastros simultâneos passariam os dois por um
+     * {@code existsByEmail} e só um sobreviveria ao insert.
+     *
+     * <p>A mensagem do driver nunca é repassada ao cliente: ela carrega o valor que colidiu
+     * ({@code Key (email)=(fulano@email.com)}) e o nome interno da constraint.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErroResponse> tratarViolacaoDeIntegridade(DataIntegrityViolationException ex,
+                                                                     HttpServletRequest request) {
+        String causa = ex.getMostSpecificCause().getMessage();
+        log.warn("Violação de integridade em {} {}: {}", request.getMethod(), request.getRequestURI(), causa);
+
+        boolean emailDuplicado = causa != null && COLUNA_EMAIL.matcher(causa).find();
+        String mensagem = emailDuplicado
+                ? "Já existe uma conta com este e-mail."
+                : "Já existe um registro com esses dados.";
+
+        return construir(HttpStatus.CONFLICT, mensagem, request);
     }
 
     /**
