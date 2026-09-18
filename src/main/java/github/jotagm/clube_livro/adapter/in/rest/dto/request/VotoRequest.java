@@ -7,5 +7,5 @@ import java.util.UUID;
 public record VotoRequest(
         @NotNull UUID votacaoId,
         @NotNull UUID opcaoVotoId,
-        @NotNull UUID usuarioId
+        @NotNull Integer usuarioId
 ) {}

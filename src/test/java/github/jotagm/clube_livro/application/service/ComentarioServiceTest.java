@@ -41,8 +41,14 @@ class ComentarioServiceTest {
     @InjectMocks
     private ComentarioService comentarioService;
 
+    /**
+     * Cada chamada devolve um usuário com id diferente, como o UUID aleatório fazia antes:
+     * os testes de permissão dependem de "autor" e "outro usuário" não serem o mesmo.
+     */
+    private int proximoIdDeUsuario = 1;
+
     private Usuario usuarioExemplo() {
-        return Usuario.builder().id(UUID.randomUUID()).nome("Leitor").build();
+        return Usuario.builder().id(proximoIdDeUsuario++).nome("Leitor").build();
     }
 
     private LeituraClube leituraExemplo(UUID clubeId) {

@@ -53,7 +53,7 @@ public class RegistroController {
     @GetMapping("/leitura/{leituraClubeId}/usuario/{usuarioId}")
     public ResponseEntity<RegistroResponse> buscarPorLeituraEUsuario(
             @Parameter(description = "Id da leitura") @PathVariable UUID leituraClubeId,
-            @Parameter(description = "Id do usuário") @PathVariable UUID usuarioId) {
+            @Parameter(description = "Id do usuário") @PathVariable Integer usuarioId) {
         return ResponseEntity.ok(RegistroResponse.from(
                 registroService.buscarPorLeituraEUsuario(leituraClubeId, usuarioId)));
     }

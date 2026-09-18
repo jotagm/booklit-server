@@ -71,7 +71,7 @@ public class VotoController {
     @GetMapping("/votacao/{votacaoId}/usuario/{usuarioId}")
     public ResponseEntity<VotoResponse> buscarPorVotacaoEUsuario(
             @Parameter(description = "Id da votação") @PathVariable UUID votacaoId,
-            @Parameter(description = "Id do usuário") @PathVariable UUID usuarioId) {
+            @Parameter(description = "Id do usuário") @PathVariable Integer usuarioId) {
         return ResponseEntity.ok(VotoResponse.from(
                 votoService.buscarPorVotacaoEUsuario(votacaoId, usuarioId)));
     }

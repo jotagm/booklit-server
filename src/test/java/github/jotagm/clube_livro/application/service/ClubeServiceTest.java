@@ -48,7 +48,7 @@ class ClubeServiceTest {
     @Test
     void criar_deveSalvarClubeEAdicionarCriadorComoLider() {
         ClubeRequest request = new ClubeRequest("Clube do Livro", "Descrição", false, null);
-        Usuario criador = new Usuario(UUID.randomUUID(), "João", "joao@email.com", "hash", null);
+        Usuario criador = new Usuario(1, "João", "joao@email.com", "hash", null);
         Clube clubeSalvo = clubeExemplo();
         when(clubeRepository.save(any(Clube.class))).thenReturn(clubeSalvo);
 
@@ -110,7 +110,7 @@ class ClubeServiceTest {
 
     @Test
     void listarVisiveis_deveRetornarPublicosMaisPrivadosOndeUsuarioEhMembro() {
-        UUID usuarioId = UUID.randomUUID();
+        Integer usuarioId = 1;
         Clube publico = new Clube(UUID.randomUUID(), "Público", "Descrição", false, ClubeStatus.ATIVO, null, List.of());
         Clube privadoMembro = new Clube(UUID.randomUUID(), "Privado A", "Descrição", true, ClubeStatus.ATIVO, null, List.of());
         Pageable pageable = PageRequest.of(0, 10);

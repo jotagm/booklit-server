@@ -9,7 +9,7 @@ public record VotoResponse(
         UUID votacaoId,
         UUID opcaoVotoId,
         String livroTitulo,
-        UUID usuarioId,
+        Integer usuarioId,
         String nomeUsuario,
         int peso
 ) {

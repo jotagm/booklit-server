@@ -36,7 +36,7 @@ public class UsuarioClubeService {
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Membro não encontrado"));
     }
 
-    public List<UsuarioClube> listarPorUsuario(UUID usuarioId) {
+    public List<UsuarioClube> listarPorUsuario(Integer usuarioId) {
         return usuarioClubeRepository.findByUsuarioId(usuarioId);
     }
 
@@ -44,7 +44,7 @@ public class UsuarioClubeService {
         return usuarioClubeRepository.findByClubeId(clubeId);
     }
 
-    public UsuarioClube buscarPorUsuarioEClube(UUID usuarioId, UUID clubeId) {
+    public UsuarioClube buscarPorUsuarioEClube(Integer usuarioId, UUID clubeId) {
         return usuarioClubeRepository.findByUsuarioIdAndClubeId(usuarioId, clubeId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não é membro deste clube"));
     }

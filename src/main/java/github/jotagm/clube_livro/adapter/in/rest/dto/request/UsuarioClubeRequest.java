@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 public record UsuarioClubeRequest(
-        @NotNull UUID usuarioId,
+        @NotNull Integer usuarioId,
         @NotNull UUID clubeId,
         @NotNull ClubePapel papel
 ) {}

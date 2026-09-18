@@ -89,13 +89,13 @@ public class ComentarioService {
         comentarioRepository.save(comentario);
     }
 
-    private void exigirMembro(UUID usuarioId, UUID clubeId) {
+    private void exigirMembro(Integer usuarioId, UUID clubeId) {
         if (!isMembro(usuarioId, clubeId)) {
             throw new AcessoNegadoException("Acesso negado: apenas membros do clube podem acessar os comentários desta leitura");
         }
     }
 
-    private boolean isMembro(UUID usuarioId, UUID clubeId) {
+    private boolean isMembro(Integer usuarioId, UUID clubeId) {
         try {
             usuarioClubeService.buscarPorUsuarioEClube(usuarioId, clubeId);
             return true;
@@ -104,7 +104,7 @@ public class ComentarioService {
         }
     }
 
-    private boolean isLider(UUID usuarioId, UUID clubeId) {
+    private boolean isLider(Integer usuarioId, UUID clubeId) {
         try {
             return usuarioClubeService.buscarPorUsuarioEClube(usuarioId, clubeId).getPapel() == ClubePapel.LIDER;
         } catch (RecursoNaoEncontradoException e) {

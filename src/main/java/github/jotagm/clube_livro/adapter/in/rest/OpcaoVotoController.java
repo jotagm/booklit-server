@@ -65,7 +65,7 @@ public class OpcaoVotoController {
     @Operation(summary = "Lista as opções sugeridas por um usuário")
     @ApiResponse(responseCode = "200", description = "Opções sugeridas pelo usuário")
     @GetMapping("/usuario/{usuarioId}")
-    public ResponseEntity<List<OpcaoVotoResponse>> listarPorUsuario(@Parameter(description = "Id do usuário sugerinte") @PathVariable UUID usuarioId) {
+    public ResponseEntity<List<OpcaoVotoResponse>> listarPorUsuario(@Parameter(description = "Id do usuário sugerinte") @PathVariable Integer usuarioId) {
         return ResponseEntity.ok(opcaoVotoService.listarPorUsuario(usuarioId).stream()
                 .map(OpcaoVotoResponse::from)
                 .toList());

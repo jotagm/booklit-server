@@ -60,7 +60,7 @@ public class VotoService {
         return votoRepository.findByOpcaoVotoId(opcaoVotoId);
     }
 
-    public Voto buscarPorVotacaoEUsuario(UUID votacaoId, UUID usuarioId) {
+    public Voto buscarPorVotacaoEUsuario(UUID votacaoId, Integer usuarioId) {
         return votoRepository.findByVotacaoIdAndUsuarioId(votacaoId, usuarioId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Voto não encontrado para este usuário nesta votação"));
     }

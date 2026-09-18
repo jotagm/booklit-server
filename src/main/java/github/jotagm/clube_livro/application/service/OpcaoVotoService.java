@@ -28,7 +28,7 @@ public class OpcaoVotoService {
         return opcaoVotoRepository.findByVotacaoId(votacaoId);
     }
 
-    public List<OpcaoVoto> listarPorUsuario(UUID usuarioId) {
+    public List<OpcaoVoto> listarPorUsuario(Integer usuarioId) {
         return opcaoVotoRepository.findBySugeridoPorId(usuarioId);
     }
 

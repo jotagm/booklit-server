@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import java.util.UUID;
 import java.time.LocalDateTime;
 
 @Entity
@@ -16,8 +15,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Usuario {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Integer id;
     String nome;
     @Column(unique = true)
     String email;

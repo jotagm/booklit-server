@@ -3,10 +3,9 @@ package github.jotagm.clube_livro.adapter.in.rest.dto.response;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 public record UsuarioResponse(
-        UUID id,
+        Integer id,
         String nome,
         String email,
         LocalDateTime createdAt

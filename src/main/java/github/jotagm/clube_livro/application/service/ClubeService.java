@@ -57,7 +57,7 @@ public class ClubeService {
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Clube não encontrado"));
     }
 
-    public Page<Clube> listarVisiveis(UUID usuarioId, Pageable pageable) {
+    public Page<Clube> listarVisiveis(Integer usuarioId, Pageable pageable) {
         List<UUID> clubesDoUsuario = usuarioClubeService.listarPorUsuario(usuarioId).stream()
                 .map(uc -> uc.getClube().getId())
                 .toList();

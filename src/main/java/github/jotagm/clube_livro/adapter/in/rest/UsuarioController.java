@@ -16,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/usuarios")
@@ -44,7 +43,7 @@ public class UsuarioController {
     @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
     @GetMapping("/{id}")
     public ResponseEntity<UsuarioResponse> buscarPorId(
-            @Parameter(description = "Id do usuário") @PathVariable UUID id) {
+            @Parameter(description = "Id do usuário") @PathVariable Integer id) {
         return ResponseEntity.ok(UsuarioResponse.from(usuarioService.buscarPorId(id)));
     }
 
@@ -65,7 +64,7 @@ public class UsuarioController {
     @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
     @PutMapping("/{id}")
     public ResponseEntity<UsuarioResponse> atualizar(
-            @Parameter(description = "Id do usuário") @PathVariable UUID id,
+            @Parameter(description = "Id do usuário") @PathVariable Integer id,
             @RequestBody @Valid UsuarioRequest request) {
         return ResponseEntity.ok(UsuarioResponse.from(usuarioService.atualizar(id, request)));
     }

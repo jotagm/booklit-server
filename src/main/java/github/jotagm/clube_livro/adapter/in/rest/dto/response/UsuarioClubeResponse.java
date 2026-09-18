@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public record UsuarioClubeResponse(
         UUID id,
-        UUID usuarioId,
+        Integer usuarioId,
         String nomeUsuario,
         UUID clubeId,
         String nomeClube,

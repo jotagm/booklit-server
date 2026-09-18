@@ -12,7 +12,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -42,7 +41,7 @@ public class UsuarioService implements UserDetailsService {
     public Usuario buscarPorEmail(String email) {
         return usuarioRepository.findByEmail(email).orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado"));
     }
-    public Usuario buscarPorId(UUID id) {
+    public Usuario buscarPorId(Integer id) {
         return usuarioRepository.findById(id).orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado"));
     }
     /** Sobrecarga mantida para quem já tem a entidade em mãos. */
@@ -59,7 +58,7 @@ public class UsuarioService implements UserDetailsService {
      * {@code senhaHash} e contava com o serviço para criptografá-la depois — funcionava, mas
      * qualquer caminho que salvasse sem passar por aqui gravaria a senha legível no banco.
      */
-    public Usuario atualizar(UUID id, UsuarioRequest request) {
+    public Usuario atualizar(Integer id, UsuarioRequest request) {
         Usuario usuario = buscarPorId(id);
         usuario.atualizarDados(request.nome(), request.email());
         usuario.definirSenhaHash(passwordEncoder.encode(request.senha()));

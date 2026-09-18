@@ -11,7 +11,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -64,7 +63,7 @@ class UsuarioServiceTest {
 
     @Test
     void buscarPorId_deveRetornarUsuarioQuandoEncontrado() {
-        UUID id = UUID.randomUUID();
+        Integer id = 1;
         Usuario usuario = new Usuario(id, "João", "joao@email.com", "hash", null);
         when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuario));
 
@@ -75,7 +74,7 @@ class UsuarioServiceTest {
 
     @Test
     void buscarPorId_deveLancarExcecaoQuandoNaoEncontrado() {
-        UUID id = UUID.randomUUID();
+        Integer id = 1;
         when(usuarioRepository.findById(id)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> usuarioService.buscarPorId(id))
@@ -85,7 +84,7 @@ class UsuarioServiceTest {
 
     @Test
     void atualizar_deveEncodarSenhaESalvarUsuario() {
-        Usuario usuario = new Usuario(UUID.randomUUID(), "João", "joao@email.com", "novaSenha", null);
+        Usuario usuario = new Usuario(1, "João", "joao@email.com", "novaSenha", null);
         when(passwordEncoder.encode("novaSenha")).thenReturn("novaSenhaEncoded");
         when(usuarioRepository.save(usuario)).thenReturn(usuario);
 

@@ -35,7 +35,7 @@ public class UsuarioClubeController {
     @Operation(summary = "Lista os clubes de um usuário")
     @ApiResponse(responseCode = "200", description = "Vínculos do usuário")
     @GetMapping("/usuario/{usuarioId}")
-    public ResponseEntity<List<UsuarioClubeResponse>> listarPorUsuario(@Parameter(description = "Id do usuário") @PathVariable UUID usuarioId) {
+    public ResponseEntity<List<UsuarioClubeResponse>> listarPorUsuario(@Parameter(description = "Id do usuário") @PathVariable Integer usuarioId) {
         return ResponseEntity.ok(usuarioClubeService.listarPorUsuario(usuarioId).stream()
                 .map(UsuarioClubeResponse::from)
                 .toList());
@@ -55,7 +55,7 @@ public class UsuarioClubeController {
     @ApiResponse(responseCode = "404", description = "O usuário não é membro do clube")
     @GetMapping("/clube/{clubeId}/usuario/{usuarioId}")
     public ResponseEntity<UsuarioClubeResponse> buscarPorUsuarioEClube(@Parameter(description = "Id do clube") @PathVariable UUID clubeId,
-                                                                        @Parameter(description = "Id do usuário") @PathVariable UUID usuarioId) {
+                                                                        @Parameter(description = "Id do usuário") @PathVariable Integer usuarioId) {
         return ResponseEntity.ok(UsuarioClubeResponse.from(
                 usuarioClubeService.buscarPorUsuarioEClube(usuarioId, clubeId)));
     }

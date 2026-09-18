@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public record OpcaoVotoRequest(
         @NotNull UUID votacaoId,
-        @NotNull UUID sugeridoPorId,
+        @NotNull Integer sugeridoPorId,
         @NotBlank String livroGoogleId,
         @NotBlank String livroTitulo,
         String livroCapaUrl

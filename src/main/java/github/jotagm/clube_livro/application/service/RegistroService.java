@@ -31,16 +31,16 @@ public class RegistroService {
         return registroRepository.findByLeituraClubeId(leituraClubeId);
     }
 
-    public List<Registro> listarPorUsuario(UUID usuarioId) {
+    public List<Registro> listarPorUsuario(Integer usuarioId) {
         return registroRepository.findByUsuarioId(usuarioId);
     }
 
-    public Registro buscarPorLeituraEUsuario(UUID leituraClubeId, UUID usuarioId) {
+    public Registro buscarPorLeituraEUsuario(UUID leituraClubeId, Integer usuarioId) {
         return registroRepository.findByLeituraClubeIdAndUsuarioId(leituraClubeId, usuarioId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Registro não encontrado para este usuário nesta leitura"));
     }
 
-    public Registro atualizarProgresso(UUID leituraId, UUID usuarioId, int novoValor) {
+    public Registro atualizarProgresso(UUID leituraId, Integer usuarioId, int novoValor) {
         Registro registro = registroRepository.findByLeituraClubeIdAndUsuarioId(leituraId, usuarioId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Registro não encontrado"));
 

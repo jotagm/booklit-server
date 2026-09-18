@@ -9,7 +9,7 @@ public record RegistroResponse(
         UUID id,
         UUID leituraClubeId,
         String livroTitulo,
-        UUID usuarioId,
+        Integer usuarioId,
         String nomeUsuario,
         int valorAtual,
         LocalDateTime updatedAt

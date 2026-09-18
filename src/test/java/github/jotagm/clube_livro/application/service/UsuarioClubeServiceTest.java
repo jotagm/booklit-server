@@ -38,7 +38,7 @@ class UsuarioClubeServiceTest {
 
     @Test
     void adicionarLider_deveCriarVinculoComPapelLider() {
-        Usuario usuario = new Usuario(UUID.randomUUID(), "João", "joao@email.com", "hash", null);
+        Usuario usuario = new Usuario(1, "João", "joao@email.com", "hash", null);
         Clube clube = new Clube(UUID.randomUUID(), "Clube do Livro", "Descrição", false, ClubeStatus.ATIVO, null, List.of());
         when(usuarioClubeRepository.save(any(UsuarioClube.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -52,7 +52,7 @@ class UsuarioClubeServiceTest {
 
     @Test
     void adicionar_deveCriarVinculoComPapelInformado() {
-        Usuario usuario = new Usuario(UUID.randomUUID(), "João", "joao@email.com", "hash", null);
+        Usuario usuario = new Usuario(1, "João", "joao@email.com", "hash", null);
         Clube clube = new Clube(UUID.randomUUID(), "Clube do Livro", "Descrição", false, ClubeStatus.ATIVO, null, List.of());
         when(usuarioClubeRepository.save(any(UsuarioClube.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -87,7 +87,7 @@ class UsuarioClubeServiceTest {
 
     @Test
     void listarPorUsuario_deveRetornarListaDeMembros() {
-        UUID usuarioId = UUID.randomUUID();
+        Integer usuarioId = 1;
         List<UsuarioClube> membros = List.of(membroExemplo(UUID.randomUUID()), membroExemplo(UUID.randomUUID()));
         when(usuarioClubeRepository.findByUsuarioId(usuarioId)).thenReturn(membros);
 
@@ -109,7 +109,7 @@ class UsuarioClubeServiceTest {
 
     @Test
     void buscarPorUsuarioEClube_deveRetornarMembroQuandoEncontrado() {
-        UUID usuarioId = UUID.randomUUID();
+        Integer usuarioId = 1;
         UUID clubeId = UUID.randomUUID();
         UsuarioClube membro = membroExemplo(UUID.randomUUID());
         when(usuarioClubeRepository.findByUsuarioIdAndClubeId(usuarioId, clubeId)).thenReturn(Optional.of(membro));
@@ -121,7 +121,7 @@ class UsuarioClubeServiceTest {
 
     @Test
     void buscarPorUsuarioEClube_deveLancarExcecaoQuandoNaoEMembro() {
-        UUID usuarioId = UUID.randomUUID();
+        Integer usuarioId = 1;
         UUID clubeId = UUID.randomUUID();
         when(usuarioClubeRepository.findByUsuarioIdAndClubeId(usuarioId, clubeId)).thenReturn(Optional.empty());
 

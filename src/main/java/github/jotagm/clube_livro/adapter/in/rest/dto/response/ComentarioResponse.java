@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 public record ComentarioResponse(
         UUID id,
         UUID leituraClubeId,
-        UUID usuarioId,
+        Integer usuarioId,
         String usuarioNome,
         String conteudo,
         boolean removido,

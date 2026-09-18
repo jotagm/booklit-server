@@ -11,7 +11,7 @@ public interface RegistroRepository extends JpaRepository<Registro, UUID> {
 
     List<Registro> findByLeituraClubeId(UUID leituraClubeId);
 
-    List<Registro> findByUsuarioId(UUID usuarioId);
+    List<Registro> findByUsuarioId(Integer usuarioId);
 
-    Optional<Registro> findByLeituraClubeIdAndUsuarioId(UUID leituraClubeId, UUID usuarioId);
+    Optional<Registro> findByLeituraClubeIdAndUsuarioId(UUID leituraClubeId, Integer usuarioId);
 }

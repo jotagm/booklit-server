@@ -8,8 +8,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface UsuarioClubeRepository extends JpaRepository <UsuarioClube, UUID>{
-    List<UsuarioClube> findByUsuarioId(UUID usuarioId);
+    List<UsuarioClube> findByUsuarioId(Integer usuarioId);
     List <UsuarioClube> findByClubeId(UUID clubeId);
-    Optional<UsuarioClube> findByUsuarioIdAndClubeId(UUID usuarioId, UUID clubeId);
+    Optional<UsuarioClube> findByUsuarioIdAndClubeId(Integer usuarioId, UUID clubeId);
 
 }

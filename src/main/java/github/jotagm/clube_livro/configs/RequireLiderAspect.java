@@ -51,7 +51,7 @@ public class RequireLiderAspect {
         return usuarioService.buscarPorEmail(email);
     }
 
-    private boolean isLider(UUID usuarioId, UUID clubeId) {
+    private boolean isLider(Integer usuarioId, UUID clubeId) {
         try {
             UsuarioClube usuarioClube = usuarioClubeService.buscarPorUsuarioEClube(usuarioId, clubeId);
             return usuarioClube.getPapel() == ClubePapel.LIDER;

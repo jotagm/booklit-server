@@ -10,5 +10,5 @@ public interface OpcaoVotoRepository extends JpaRepository<OpcaoVoto, UUID> {
 
     List<OpcaoVoto> findByVotacaoId(UUID votacaoId);
 
-    List<OpcaoVoto> findBySugeridoPorId(UUID usuarioId);
+    List<OpcaoVoto> findBySugeridoPorId(Integer usuarioId);
 }
