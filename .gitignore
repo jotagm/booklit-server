@@ -49,3 +49,7 @@ build/
 
 ### VS Code ###
 .vscode/
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
