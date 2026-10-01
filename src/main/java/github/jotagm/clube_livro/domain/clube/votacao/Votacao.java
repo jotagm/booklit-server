@@ -1,6 +1,7 @@
 package github.jotagm.clube_livro.domain.clube.votacao;
 
 import github.jotagm.clube_livro.domain.clube.Clube;
+import github.jotagm.clube_livro.domain.exceptions.VotacaoJaEncerradaException;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -30,8 +31,12 @@ public class Votacao {
     @Column(name = "data_encerramento")
     LocalDateTime dataEncerramento;
 
-    public void encerrar() {
+    public VotacaoEncerrada encerrar(OpcaoVoto vencedora) {
+        if (this.status == VotacaoStatus.ENCERRADA) {
+            throw new VotacaoJaEncerradaException();
+        }
         this.status = VotacaoStatus.ENCERRADA;
+        return VotacaoEncerrada.de(this, vencedora);
     }
 
     public void reagendar(LocalDateTime dataAbertura, LocalDateTime dataEncerramento) {

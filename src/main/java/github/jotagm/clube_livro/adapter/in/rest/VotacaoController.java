@@ -3,7 +3,7 @@ package github.jotagm.clube_livro.adapter.in.rest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.VotacaoRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.LeituraClubeResponse;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.VotacaoResponse;
-import github.jotagm.clube_livro.application.service.VotacaoEnceramentoService;
+import github.jotagm.clube_livro.application.service.VotacaoEncerramentoService;
 import github.jotagm.clube_livro.application.service.VotacaoService;
 import github.jotagm.clube_livro.configs.RequireLider;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,7 +26,7 @@ import java.util.UUID;
 public class VotacaoController {
 
     private final VotacaoService votacaoService;
-    private final VotacaoEnceramentoService votacaoEnceramentoService;
+    private final VotacaoEncerramentoService votacaoEncerramentoService;
 
     @Operation(
             summary = "Abre uma votação no clube",
@@ -94,6 +94,6 @@ public class VotacaoController {
     @PostMapping("{id}/encerrar")
     @RequireLider("@votacaoService.buscarPorId(#id).clube.id")
     public ResponseEntity<LeituraClubeResponse> encerrarVotacao(@PathVariable UUID id) {
-        return ResponseEntity.ok(LeituraClubeResponse.from(votacaoEnceramentoService.finalizarVotacao(id)));
+        return ResponseEntity.ok(LeituraClubeResponse.from(votacaoEncerramentoService.finalizarVotacao(id)));
     }
 }

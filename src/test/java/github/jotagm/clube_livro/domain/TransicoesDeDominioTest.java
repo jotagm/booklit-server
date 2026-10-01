@@ -8,6 +8,7 @@ import github.jotagm.clube_livro.domain.clube.convite.ConviteStatus;
 import github.jotagm.clube_livro.domain.clube.leitura.Comentario;
 import github.jotagm.clube_livro.domain.clube.leitura.LeituraClube;
 import github.jotagm.clube_livro.domain.clube.leitura.Registro;
+import github.jotagm.clube_livro.domain.clube.votacao.OpcaoVoto;
 import github.jotagm.clube_livro.domain.clube.votacao.Votacao;
 import github.jotagm.clube_livro.domain.clube.votacao.VotacaoStatus;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
@@ -54,7 +55,7 @@ class TransicoesDeDominioTest {
         LocalDateTime abertura = LocalDateTime.now();
         Votacao votacao = Votacao.abrir(new Clube(), abertura, abertura.plusDays(7));
 
-        votacao.encerrar();
+        votacao.encerrar(OpcaoVoto.builder().build());
         assertThat(votacao.getStatus()).isEqualTo(VotacaoStatus.ENCERRADA);
 
         LocalDateTime nova = abertura.plusDays(1);

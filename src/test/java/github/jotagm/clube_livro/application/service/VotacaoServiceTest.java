@@ -2,6 +2,8 @@ package github.jotagm.clube_livro.application.service;
 
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.VotacaoRequest;
 import github.jotagm.clube_livro.adapter.out.persistence.VotacaoRepository;
+import github.jotagm.clube_livro.domain.clube.Clube;
+import github.jotagm.clube_livro.domain.clube.votacao.OpcaoVoto;
 import github.jotagm.clube_livro.domain.clube.votacao.Votacao;
 import github.jotagm.clube_livro.domain.clube.votacao.VotacaoStatus;
 import github.jotagm.clube_livro.domain.exceptions.IntervaloInvalidoException;
@@ -37,7 +39,7 @@ class VotacaoServiceTest {
     private VotacaoService votacaoService;
 
     private Votacao votacaoExemplo(UUID id) {
-        return new Votacao(id, null, VotacaoStatus.ABERTA, LocalDateTime.now(), null);
+        return new Votacao(id, new Clube(), VotacaoStatus.ABERTA, LocalDateTime.now(), null);
     }
 
     @Test
@@ -86,7 +88,7 @@ class VotacaoServiceTest {
     @Test
     void atualizar_deveSalvarERetornarVotacaoAtualizada() {
         Votacao votacao = votacaoExemplo(UUID.randomUUID());
-        votacao.encerrar();
+        votacao.encerrar(OpcaoVoto.builder().build());
         when(votacaoRepository.save(votacao)).thenReturn(votacao);
 
         Votacao resultado = votacaoService.atualizar(votacao);

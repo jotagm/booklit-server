@@ -1,13 +1,17 @@
 package github.jotagm.clube_livro.application.service;
 
+import github.jotagm.clube_livro.application.port.out.PublicadorDeEventos;
 import github.jotagm.clube_livro.domain.clube.leitura.LeituraClube;
 import github.jotagm.clube_livro.domain.clube.votacao.OpcaoVoto;
 import github.jotagm.clube_livro.domain.clube.votacao.Votacao;
+import github.jotagm.clube_livro.domain.clube.votacao.VotacaoEncerrada;
 import github.jotagm.clube_livro.domain.clube.votacao.Voto;
 import github.jotagm.clube_livro.domain.exceptions.VotacaoSemVotosException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -17,19 +21,20 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static github.jotagm.clube_livro.domain.clube.votacao.VotacaoStatus.ENCERRADA;
-
 @Slf4j
 @Service
 @AllArgsConstructor
-public class VotacaoEnceramentoService {
+public class VotacaoEncerramentoService {
 
     private static final int PESO_VOTO_LIDER = 2;
 
     private final VotacaoService votacaoService;
     private final VotoService votoService;
     private final LeituraClubeService leituraClubeService;
+    private final PublicadorDeEventos publicadorDeEventos;
+    private final TransactionTemplate transactionTemplate;
 
+    @Transactional
     public LeituraClube finalizarVotacao(UUID idVotacao) {
         Votacao votacao = votacaoService.buscarPorId(idVotacao);
         List<Voto> votos = votoService.listarPorVotacao(idVotacao);
@@ -62,7 +67,7 @@ public class VotacaoEnceramentoService {
 
         OpcaoVoto vencedora = opcaoPorId.get(desempatar(opcoesEmpatadas, votos));
 
-        votacao.encerrar();
+        VotacaoEncerrada evento = votacao.encerrar(vencedora);
         votacaoService.atualizar(votacao);
 
         LeituraClube leituraClube = LeituraClube.doLivroVencedor(
@@ -71,16 +76,23 @@ public class VotacaoEnceramentoService {
                 vencedora.getLivroTitulo(),
                 vencedora.getLivroCapaUrl());
 
-        return leituraClubeService.salvar(leituraClube);
+        LeituraClube salva = leituraClubeService.salvar(leituraClube);
+        publicadorDeEventos.publicar(evento);
+
+        log.info("Votação encerrada id={} clube={} vencedor='{}' eventId={}",
+                votacao.getId(), votacao.getClube().getId(), vencedora.getLivroTitulo(), evento.eventId());
+
+        return salva;
     }
 
+    // Chamada interna não passa pelo proxy do Spring; o TransactionTemplate garante a transação.
     public List<LeituraClube> encerrarVotacoesVencidas() {
         List<Votacao> vencidas = votacaoService.listarAbertasVencidas(LocalDateTime.now());
         List<LeituraClube> encerradas = new ArrayList<>();
 
         for (Votacao votacao : vencidas) {
             try {
-                encerradas.add(finalizarVotacao(votacao.getId()));
+                encerradas.add(transactionTemplate.execute(status -> finalizarVotacao(votacao.getId())));
             } catch (RuntimeException e) {
                 log.error("Falha ao encerrar automaticamente a votação {}: {}", votacao.getId(), e.getMessage());
             }
