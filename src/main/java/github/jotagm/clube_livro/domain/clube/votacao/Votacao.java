@@ -31,12 +31,12 @@ public class Votacao {
     @Column(name = "data_encerramento")
     LocalDateTime dataEncerramento;
 
-    public VotacaoEncerrada encerrar(OpcaoVoto vencedora) {
+    public VotacaoEncerrada encerrar(OpcaoVoto vencedora, UUID leituraClubeId) {
         if (this.status == VotacaoStatus.ENCERRADA) {
             throw new VotacaoJaEncerradaException();
         }
         this.status = VotacaoStatus.ENCERRADA;
-        return VotacaoEncerrada.de(this, vencedora);
+        return VotacaoEncerrada.de(this, vencedora, leituraClubeId);
     }
 
     public void reagendar(LocalDateTime dataAbertura, LocalDateTime dataEncerramento) {

@@ -3,6 +3,7 @@ package github.jotagm.clube_livro.adapter.in.rest.dto.request;
 import github.jotagm.clube_livro.domain.clube.leitura.TipoMeta;
 import io.micrometer.common.lang.Nullable;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -33,5 +34,9 @@ public record LeituraClubeRequest(
 
         @NotNull
         @Nullable
-        LocalDateTime dataFim
+        LocalDateTime dataFim,
+
+        /** Opcional: link do Spotify (playlist, álbum, podcast ou audiobook). Vazio remove. */
+        @Size(max = 300)
+        String spotifyUrl
 ) {}

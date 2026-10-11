@@ -9,11 +9,11 @@ public record VotacaoEncerrada(UUID eventId, Instant ocorridoEm, Dados dados) im
 
     public static final String TIPO = "votacao.encerrada";
 
-    public record Dados(UUID votacaoId, UUID clubeId, UUID opcaoVencedoraId,
+    public record Dados(UUID votacaoId, UUID clubeId, UUID opcaoVencedoraId, UUID leituraClubeId,
                         String livroGoogleId, String livroTitulo) {
     }
 
-    static VotacaoEncerrada de(Votacao votacao, OpcaoVoto vencedora) {
+    static VotacaoEncerrada de(Votacao votacao, OpcaoVoto vencedora, UUID leituraClubeId) {
         return new VotacaoEncerrada(
                 UUID.randomUUID(),
                 Instant.now(),
@@ -21,6 +21,7 @@ public record VotacaoEncerrada(UUID eventId, Instant ocorridoEm, Dados dados) im
                         votacao.getId(),
                         votacao.getClube().getId(),
                         vencedora.getId(),
+                        leituraClubeId,
                         vencedora.getLivroGoogleId(),
                         vencedora.getLivroTitulo()));
     }

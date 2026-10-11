@@ -39,6 +39,8 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios").permitAll()
+                        // Prévia do link de convite: o convidado ainda não tem conta.
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/convites/link/*").permitAll()
                         .anyRequest().authenticated()
                 )
                 // Sem isto o Spring Security responde 403 de corpo vazio tanto para "sem token"

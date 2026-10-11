@@ -15,6 +15,7 @@ import github.jotagm.clube_livro.domain.usuario.Usuario;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -55,7 +56,7 @@ class TransicoesDeDominioTest {
         LocalDateTime abertura = LocalDateTime.now();
         Votacao votacao = Votacao.abrir(new Clube(), abertura, abertura.plusDays(7));
 
-        votacao.encerrar(OpcaoVoto.builder().build());
+        votacao.encerrar(OpcaoVoto.builder().build(), UUID.randomUUID());
         assertThat(votacao.getStatus()).isEqualTo(VotacaoStatus.ENCERRADA);
 
         LocalDateTime nova = abertura.plusDays(1);

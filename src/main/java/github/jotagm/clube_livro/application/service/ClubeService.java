@@ -52,6 +52,31 @@ public class ClubeService {
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Clube não encontrado"));
     }
 
+    public Clube buscarPorCodigoConvite(String codigo) {
+        return clubeRepository.findByCodigoConvite(codigo)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Link de convite inválido ou desativado"));
+    }
+
+    /** Devolve o código de convite do clube, gerando um na primeira vez. */
+    public String obterCodigoConvite(UUID clubeId) {
+        Clube clube = buscarPorId(clubeId);
+        if (clube.getCodigoConvite() == null) {
+            clube.gerarCodigoConvite();
+            clubeRepository.save(clube);
+            log.info("Link de convite gerado clube={}", clubeId);
+        }
+        return clube.getCodigoConvite();
+    }
+
+    /** Troca o código: quem tinha o link antigo não consegue mais entrar. */
+    public String regenerarCodigoConvite(UUID clubeId) {
+        Clube clube = buscarPorId(clubeId);
+        clube.gerarCodigoConvite();
+        clubeRepository.save(clube);
+        log.info("Link de convite regenerado clube={}", clubeId);
+        return clube.getCodigoConvite();
+    }
+
     public Clube buscarPorNome(String nome) {
         return clubeRepository.findByNome(nome)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Clube não encontrado"));

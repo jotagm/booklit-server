@@ -27,12 +27,15 @@ public class VotoService {
     private final VotacaoService votacaoService;
     private final UsuarioClubeService usuarioClubeService;
 
-    public Voto votar(VotoRequest request) {
-        if (votoRepository.findByVotacaoIdAndUsuarioId(request.votacaoId(), request.usuarioId()).isPresent()) {
+    /**
+     * O eleitor vem da autenticação, nunca do corpo da requisição: antes o {@code usuarioId}
+     * do request decidia em nome de quem o voto era gravado, o que permitia votar por outro.
+     */
+    public Voto votar(VotoRequest request, Usuario usuario) {
+        if (votoRepository.findByVotacaoIdAndUsuarioId(request.votacaoId(), usuario.getId()).isPresent()) {
             throw new UsuarioJaVotouException();
         }
 
-        Usuario usuario = usuarioService.buscarPorId(request.usuarioId());
         Votacao votacao = votacaoService.buscarPorId(request.votacaoId());
         OpcaoVoto opcaoVoto = opcaoVotoService.buscarPorId(request.opcaoVotoId());
 

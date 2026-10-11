@@ -7,9 +7,11 @@ import github.jotagm.clube_livro.domain.clube.leitura.LeituraClube;
 import github.jotagm.clube_livro.domain.clube.leitura.Registro;
 import github.jotagm.clube_livro.domain.exceptions.IntervaloInvalidoException;
 import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
+import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -43,6 +45,7 @@ public class LeituraClubeService {
                 request.valorMeta(),
                 request.dataInicio(),
                 request.dataFim());
+        leitura.definirSpotify(request.spotifyUrl());
 
         LeituraClube leituraSalva = leituraClubeRepository.save(leitura);
 
@@ -61,6 +64,28 @@ public class LeituraClubeService {
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Leitura não encontrada"));
     }
 
+    @Transactional
+    public int iniciarRegistrosDosMembros(UUID leituraId) {
+        LeituraClube leitura = buscarPorId(leituraId);
+        List<UsuarioClube> membros = usuarioClubeService.listarPorClube(leitura.getClube().getId());
+        membros.forEach(uc -> registroService.salvar(Registro.iniciar(leitura, uc.getUsuario())));
+        return membros.size();
+    }
+
+    /**
+     * Quem entra no clube com uma leitura já em andamento não estava na lista de membros
+     * quando os registros foram criados — sem isto o novo membro nunca conseguiria registrar
+     * progresso (o PUT de registro responde 404).
+     */
+    public void iniciarRegistroNaLeituraAtiva(UUID clubeId, Usuario usuario) {
+        buscarLeituraAtiva(clubeId).ifPresent(leitura -> {
+            if (!registroService.existe(leitura.getId(), usuario.getId())) {
+                registroService.salvar(Registro.iniciar(leitura, usuario));
+                log.info("Registro iniciado para novo membro leitura={} usuario={}", leitura.getId(), usuario.getEmail());
+            }
+        });
+    }
+
     public List<LeituraClube> listarPorClube(UUID clubeId) {
         return leituraClubeRepository.findByClubeIdOrderByDataInicioDesc(clubeId);
     }
@@ -77,6 +102,14 @@ public class LeituraClubeService {
                 request.valorMeta(),
                 request.dataInicio(),
                 request.dataFim());
+        leitura.definirSpotify(request.spotifyUrl());
+        return leituraClubeRepository.save(leitura);
+    }
+
+    /** Troca só o link do Spotify, sem exigir o corpo inteiro da leitura. */
+    public LeituraClube definirSpotify(UUID id, String url) {
+        LeituraClube leitura = buscarPorId(id);
+        leitura.definirSpotify(url);
         return leituraClubeRepository.save(leitura);
     }
 

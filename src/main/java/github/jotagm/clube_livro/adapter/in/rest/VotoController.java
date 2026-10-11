@@ -1,5 +1,9 @@
 package github.jotagm.clube_livro.adapter.in.rest;
 
+import github.jotagm.clube_livro.configs.RequireMembro;
+import github.jotagm.clube_livro.configs.AutorizacaoClube;
+import github.jotagm.clube_livro.domain.clube.votacao.Voto;
+import github.jotagm.clube_livro.domain.exceptions.AcessoNegadoException;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.VotoRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.VotoResponse;
 import github.jotagm.clube_livro.application.service.OpcaoVotoService;
@@ -26,23 +30,26 @@ import java.util.UUID;
 public class VotoController {
 
     private final VotoService votoService;
+    private final AutorizacaoClube autorizacaoClube;
 
     @Operation(
             summary = "Registra um voto",
-            description = "Um usuário só pode votar uma vez por votação. O peso é definido pelo papel dele no clube.")
+            description = "Um usuário só pode votar uma vez por votação. O voto é sempre do usuário autenticado (o campo `usuarioId` do corpo é ignorado) e o peso é definido pelo papel dele no clube.")
     @ApiResponse(responseCode = "201", description = "Voto registrado")
     @ApiResponse(responseCode = "404", description = "Votação, opção ou usuário não encontrado")
     @ApiResponse(responseCode = "409", description = "O usuário já votou nesta votação")
     @PostMapping
+    @RequireMembro("@votacaoService.buscarPorId(#request.votacaoId()).clube.id")
     public ResponseEntity<VotoResponse> votar(@RequestBody @Valid VotoRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(VotoResponse.from(votoService.votar(request)));
+                .body(VotoResponse.from(votoService.votar(request, autorizacaoClube.usuarioAutenticado())));
     }
 
     @Operation(summary = "Busca um voto por id")
     @ApiResponse(responseCode = "200", description = "Voto encontrado")
     @ApiResponse(responseCode = "404", description = "Voto não encontrado")
     @GetMapping("/{id}")
+    @RequireMembro("@votoService.buscarPorId(#id).votacao.clube.id")
     public ResponseEntity<VotoResponse> buscarPorId(@Parameter(description = "Id do voto") @PathVariable UUID id) {
         return ResponseEntity.ok(VotoResponse.from(votoService.buscarPorId(id)));
     }
@@ -50,6 +57,7 @@ public class VotoController {
     @Operation(summary = "Lista todos os votos de uma votação")
     @ApiResponse(responseCode = "200", description = "Votos da votação")
     @GetMapping("/votacao/{votacaoId}")
+    @RequireMembro("@votacaoService.buscarPorId(#votacaoId).clube.id")
     public ResponseEntity<List<VotoResponse>> listarPorVotacao(@Parameter(description = "Id da votação") @PathVariable UUID votacaoId) {
         return ResponseEntity.ok(votoService.listarPorVotacao(votacaoId).stream()
                 .map(VotoResponse::from)
@@ -59,6 +67,7 @@ public class VotoController {
     @Operation(summary = "Lista os votos recebidos por uma opção", description = "Útil para exibir a apuração parcial por livro.")
     @ApiResponse(responseCode = "200", description = "Votos da opção")
     @GetMapping("/opcao/{opcaoVotoId}")
+    @RequireMembro("@opcaoVotoService.buscarPorId(#opcaoVotoId).votacao.clube.id")
     public ResponseEntity<List<VotoResponse>> listarPorOpcao(@Parameter(description = "Id da opção de voto") @PathVariable UUID opcaoVotoId) {
         return ResponseEntity.ok(votoService.listarPorOpcao(opcaoVotoId).stream()
                 .map(VotoResponse::from)
@@ -69,6 +78,7 @@ public class VotoController {
     @ApiResponse(responseCode = "200", description = "Voto encontrado")
     @ApiResponse(responseCode = "404", description = "O usuário ainda não votou nesta votação")
     @GetMapping("/votacao/{votacaoId}/usuario/{usuarioId}")
+    @RequireMembro("@votacaoService.buscarPorId(#votacaoId).clube.id")
     public ResponseEntity<VotoResponse> buscarPorVotacaoEUsuario(
             @Parameter(description = "Id da votação") @PathVariable UUID votacaoId,
             @Parameter(description = "Id do usuário") @PathVariable Integer usuarioId) {
@@ -81,6 +91,10 @@ public class VotoController {
     @ApiResponse(responseCode = "404", description = "Voto não encontrado")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@Parameter(description = "Id do voto") @PathVariable UUID id) {
+        Voto voto = votoService.buscarPorId(id);
+        if (!voto.getUsuario().getId().equals(autorizacaoClube.usuarioAutenticado().getId())) {
+            throw new AcessoNegadoException("Acesso negado: só é possível remover o próprio voto");
+        }
         votoService.deletar(id);
         return ResponseEntity.noContent().build();
     }

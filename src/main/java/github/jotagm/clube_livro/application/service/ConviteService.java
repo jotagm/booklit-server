@@ -1,6 +1,7 @@
 package github.jotagm.clube_livro.application.service;
 
 import github.jotagm.clube_livro.adapter.out.persistence.ConviteRepository;
+import github.jotagm.clube_livro.domain.clube.Clube;
 import github.jotagm.clube_livro.domain.clube.ClubePapel;
 import github.jotagm.clube_livro.domain.clube.convite.Convite;
 import github.jotagm.clube_livro.domain.clube.convite.ConviteStatus;
@@ -24,6 +25,8 @@ public class ConviteService {
     private final ConviteRepository conviteRepository;
     private final UsuarioClubeService usuarioClubeService;
     private final UsuarioService usuarioService;
+    private final ClubeService clubeService;
+    private final LeituraClubeService leituraClubeService;
 
     public Convite salvar(Convite convite) {
         return conviteRepository.save(convite);
@@ -47,7 +50,7 @@ public class ConviteService {
         convite.aceitar();
 
         Usuario usuario = usuarioService.buscarPorEmail(emailUsuario);
-        usuarioClubeService.adicionar(usuario, convite.getClube(), ClubePapel.MEMBRO);
+        adicionarComoMembro(usuario, convite.getClube());
 
         log.info("Convite aceito id={} clube={} usuario={}",
                 convite.getId(), convite.getClube().getId(), emailUsuario);
@@ -67,8 +70,41 @@ public class ConviteService {
         return conviteRepository.save(convite);
     }
 
+    /** Convite mais recente para o e-mail — um mesmo e-mail pode ter sido convidado por vários clubes. */
     public Convite buscarPorEmailDestinatario(String email) {
-        return conviteRepository.findByEmailDestinatario(email);
+        return conviteRepository.findByEmailDestinatarioIgnoreCaseOrderByCreatedAtDesc(email).stream()
+                .findFirst()
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Nenhum convite para este e-mail"));
+    }
+
+    /** Convites pendentes e ainda válidos endereçados ao e-mail do usuário — a caixa de entrada dele. */
+    public List<Convite> listarPendentesDoUsuario(String email) {
+        LocalDateTime agora = LocalDateTime.now();
+        return conviteRepository
+                .findByEmailDestinatarioIgnoreCaseAndStatusOrderByCreatedAtDesc(email, ConviteStatus.PENDENTE)
+                .stream()
+                .filter(c -> !c.estaExpirado(agora))
+                .toList();
+    }
+
+    /**
+     * Entrada pelo link de convite. Idempotente: quem já é membro só é levado ao clube, sem
+     * erro — o mesmo link costuma ser clicado mais de uma vez no grupo.
+     */
+    public Clube entrarPorCodigo(String codigo, Usuario usuario) {
+        Clube clube = clubeService.buscarPorCodigoConvite(codigo);
+        boolean jaMembro = usuarioClubeService.listarPorClube(clube.getId()).stream()
+                .anyMatch(uc -> uc.getUsuario().getId().equals(usuario.getId()));
+        if (!jaMembro) {
+            adicionarComoMembro(usuario, clube);
+            log.info("Entrada por link clube={} usuario={}", clube.getId(), usuario.getEmail());
+        }
+        return clube;
+    }
+
+    private void adicionarComoMembro(Usuario usuario, Clube clube) {
+        usuarioClubeService.adicionar(usuario, clube, ClubePapel.MEMBRO);
+        leituraClubeService.iniciarRegistroNaLeituraAtiva(clube.getId(), usuario);
     }
 
     public List<Convite> listarPorClube(UUID clubeId) {

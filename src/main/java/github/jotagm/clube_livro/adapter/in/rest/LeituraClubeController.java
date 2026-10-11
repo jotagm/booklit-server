@@ -1,6 +1,8 @@
 package github.jotagm.clube_livro.adapter.in.rest;
 
+import github.jotagm.clube_livro.configs.RequireMembro;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.LeituraClubeRequest;
+import github.jotagm.clube_livro.adapter.in.rest.dto.request.SpotifyRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.GoogleBooksResponse;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.LeituraClubeResponse;
 import github.jotagm.clube_livro.adapter.out.client.CampoDeBusca;
@@ -51,6 +53,7 @@ public class LeituraClubeController {
     @ApiResponse(responseCode = "200", description = "Leitura encontrada")
     @ApiResponse(responseCode = "404", description = "Leitura não encontrada")
     @GetMapping("/{id}")
+    @RequireMembro("@leituraClubeService.buscarPorId(#id).clube.id")
     public ResponseEntity<LeituraClubeResponse> buscarPorId(
             @Parameter(description = "Id da leitura") @PathVariable UUID id) {
         return ResponseEntity.ok(LeituraClubeResponse.from(leituraClubeService.buscarPorId(id)));
@@ -59,6 +62,7 @@ public class LeituraClubeController {
     @Operation(summary = "Lista o histórico de leituras de um clube")
     @ApiResponse(responseCode = "200", description = "Leituras do clube")
     @GetMapping("/clube/{clubeId}")
+    @RequireMembro("#clubeId")
     public ResponseEntity<List<LeituraClubeResponse>> listarPorClube(
             @Parameter(description = "Id do clube") @PathVariable UUID clubeId) {
         return ResponseEntity.ok(leituraClubeService.listarPorClube(clubeId).stream()
@@ -94,11 +98,25 @@ public class LeituraClubeController {
     }
 
     @Operation(
+            summary = "Define o link do Spotify da leitura",
+            description = "Restrito ao LIDER. Aceita playlist, álbum, música, podcast ou audiobook de open.spotify.com; vazio remove. O link é exibido com o player embutido do Spotify — não usa a Web API nem login.")
+    @ApiResponse(responseCode = "200", description = "Leitura atualizada")
+    @ApiResponse(responseCode = "422", description = "Não é um link do Spotify suportado")
+    @PutMapping("/{id}/spotify")
+    @RequireLider("@leituraClubeService.buscarPorId(#id).clube.id")
+    public ResponseEntity<LeituraClubeResponse> definirSpotify(
+            @Parameter(description = "Id da leitura") @PathVariable UUID id,
+            @RequestBody @Valid SpotifyRequest request) {
+        return ResponseEntity.ok(LeituraClubeResponse.from(leituraClubeService.definirSpotify(id, request.url())));
+    }
+
+    @Operation(
             summary = "Busca a leitura ativa do clube",
             description = "Retorna a leitura cujo intervalo `dataInicio`–`dataFim` contém o instante atual.")
     @ApiResponse(responseCode = "200", description = "Leitura ativa encontrada")
     @ApiResponse(responseCode = "404", description = "O clube não possui leitura ativa no momento")
     @GetMapping("/clube/{clubeId}/leitura-ativa")
+    @RequireMembro("#clubeId")
     public ResponseEntity<LeituraClubeResponse> buscarLeituraAtiva(
             @Parameter(description = "Id do clube") @PathVariable UUID clubeId) {
         return leituraClubeService.buscarLeituraAtiva(clubeId)

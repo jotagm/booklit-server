@@ -1,5 +1,6 @@
 package github.jotagm.clube_livro.adapter.in.rest;
 
+import github.jotagm.clube_livro.configs.RequireMembro;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.RegistroRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.RegistroResponse;
 import github.jotagm.clube_livro.application.service.RegistroService;
@@ -32,6 +33,7 @@ public class RegistroController {
     @ApiResponse(responseCode = "200", description = "Registro encontrado")
     @ApiResponse(responseCode = "404", description = "Registro não encontrado")
     @GetMapping("/{id}")
+    @RequireMembro("@registroService.buscarPorId(#id).leituraClube.clube.id")
     public ResponseEntity<RegistroResponse> buscarPorId(@Parameter(description = "Id do registro") @PathVariable UUID id) {
         return ResponseEntity.ok(RegistroResponse.from(registroService.buscarPorId(id)));
     }
@@ -41,6 +43,7 @@ public class RegistroController {
             description = "É a visão que alimenta o acompanhamento coletivo da leitura.")
     @ApiResponse(responseCode = "200", description = "Registros da leitura")
     @GetMapping("/leitura/{leituraClubeId}")
+    @RequireMembro("@leituraClubeService.buscarPorId(#leituraClubeId).clube.id")
     public ResponseEntity<List<RegistroResponse>> listarPorLeitura(@Parameter(description = "Id da leitura") @PathVariable UUID leituraClubeId) {
         return ResponseEntity.ok(registroService.listarPorLeitura(leituraClubeId).stream()
                 .map(RegistroResponse::from)
@@ -51,6 +54,7 @@ public class RegistroController {
     @ApiResponse(responseCode = "200", description = "Registro encontrado")
     @ApiResponse(responseCode = "404", description = "Não há registro para essa combinação de leitura e usuário")
     @GetMapping("/leitura/{leituraClubeId}/usuario/{usuarioId}")
+    @RequireMembro("@leituraClubeService.buscarPorId(#leituraClubeId).clube.id")
     public ResponseEntity<RegistroResponse> buscarPorLeituraEUsuario(
             @Parameter(description = "Id da leitura") @PathVariable UUID leituraClubeId,
             @Parameter(description = "Id do usuário") @PathVariable Integer usuarioId) {
@@ -64,6 +68,7 @@ public class RegistroController {
     @ApiResponse(responseCode = "200", description = "Progresso atualizado")
     @ApiResponse(responseCode = "404", description = "Leitura não encontrada")
     @PutMapping("/leitura/{leituraId}")
+    @RequireMembro("@leituraClubeService.buscarPorId(#leituraId).clube.id")
     public ResponseEntity<RegistroResponse> atualizar(
             @Parameter(description = "Id da leitura") @PathVariable UUID leituraId,
             @RequestBody @Valid RegistroRequest request,

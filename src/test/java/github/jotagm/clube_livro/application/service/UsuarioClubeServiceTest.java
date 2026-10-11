@@ -39,7 +39,7 @@ class UsuarioClubeServiceTest {
     @Test
     void adicionarLider_deveCriarVinculoComPapelLider() {
         Usuario usuario = new Usuario(1, "João", "joao@email.com", "hash", null);
-        Clube clube = new Clube(UUID.randomUUID(), "Clube do Livro", "Descrição", false, ClubeStatus.ATIVO, null, List.of());
+        Clube clube = new Clube(UUID.randomUUID(), "Clube do Livro", "Descrição", false, ClubeStatus.ATIVO, null, List.of(), null);
         when(usuarioClubeRepository.save(any(UsuarioClube.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -53,7 +53,7 @@ class UsuarioClubeServiceTest {
     @Test
     void adicionar_deveCriarVinculoComPapelInformado() {
         Usuario usuario = new Usuario(1, "João", "joao@email.com", "hash", null);
-        Clube clube = new Clube(UUID.randomUUID(), "Clube do Livro", "Descrição", false, ClubeStatus.ATIVO, null, List.of());
+        Clube clube = new Clube(UUID.randomUUID(), "Clube do Livro", "Descrição", false, ClubeStatus.ATIVO, null, List.of(), null);
         when(usuarioClubeRepository.save(any(UsuarioClube.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 

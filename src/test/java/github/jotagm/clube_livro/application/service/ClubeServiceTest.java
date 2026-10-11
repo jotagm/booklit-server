@@ -42,7 +42,7 @@ class ClubeServiceTest {
     private ClubeService clubeService;
 
     private Clube clubeExemplo() {
-        return new Clube(UUID.randomUUID(), "Clube do Livro", "Descrição", false, ClubeStatus.ATIVO, null, List.of());
+        return new Clube(UUID.randomUUID(), "Clube do Livro", "Descrição", false, ClubeStatus.ATIVO, null, List.of(), null);
     }
 
     @Test
@@ -111,8 +111,8 @@ class ClubeServiceTest {
     @Test
     void listarVisiveis_deveRetornarPublicosMaisPrivadosOndeUsuarioEhMembro() {
         Integer usuarioId = 1;
-        Clube publico = new Clube(UUID.randomUUID(), "Público", "Descrição", false, ClubeStatus.ATIVO, null, List.of());
-        Clube privadoMembro = new Clube(UUID.randomUUID(), "Privado A", "Descrição", true, ClubeStatus.ATIVO, null, List.of());
+        Clube publico = new Clube(UUID.randomUUID(), "Público", "Descrição", false, ClubeStatus.ATIVO, null, List.of(), null);
+        Clube privadoMembro = new Clube(UUID.randomUUID(), "Privado A", "Descrição", true, ClubeStatus.ATIVO, null, List.of(), null);
         Pageable pageable = PageRequest.of(0, 10);
 
         when(usuarioClubeService.listarPorUsuario(usuarioId))

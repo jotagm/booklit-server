@@ -7,5 +7,6 @@ import java.util.UUID;
 public record VotoRequest(
         @NotNull UUID votacaoId,
         @NotNull UUID opcaoVotoId,
-        @NotNull Integer usuarioId
+        /** Ignorado: o voto é sempre do usuário autenticado. Mantido para compatibilidade com clientes antigos. */
+        @Deprecated Integer usuarioId
 ) {}

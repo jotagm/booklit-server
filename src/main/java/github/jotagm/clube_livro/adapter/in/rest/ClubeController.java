@@ -1,5 +1,7 @@
 package github.jotagm.clube_livro.adapter.in.rest;
 
+import github.jotagm.clube_livro.configs.RequireMembro;
+import github.jotagm.clube_livro.configs.AutorizacaoClube;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.ClubeRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.ClubeResponse;
 import github.jotagm.clube_livro.application.service.ClubeService;
@@ -13,7 +15,9 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import github.jotagm.clube_livro.adapter.in.rest.dto.response.ConviteLinkResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -26,13 +30,18 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/clubes")
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Tag(name = "Clubes", description = "Criação e gestão dos clubes de leitura")
 public class ClubeController {
 
     private final ClubeService clubeService;
     private final TemaService temaService;
     private final UsuarioService usuarioService;
+    private final AutorizacaoClube autorizacaoClube;
+
+    /** Endereço público do front, base do link de convite. */
+    @Value("${booklit.front-url:https://booklit.bio}")
+    private String frontUrl;
 
     @Operation(
             summary = "Cria um clube",
@@ -66,6 +75,7 @@ public class ClubeController {
     @ApiResponse(responseCode = "200", description = "Clube encontrado")
     @ApiResponse(responseCode = "404", description = "Clube não encontrado")
     @GetMapping("/{id}")
+    @RequireMembro(value = "#id", permitirClubePublico = true)
     public ResponseEntity<ClubeResponse> buscarPorId(
             @Parameter(description = "Id do clube") @PathVariable UUID id) {
         return ResponseEntity.ok(ClubeResponse.from(clubeService.buscarPorId(id)));
@@ -77,7 +87,11 @@ public class ClubeController {
     @GetMapping("/nome/{nome}")
     public ResponseEntity<ClubeResponse> buscarPorNome(
             @Parameter(description = "Nome exato do clube") @PathVariable String nome) {
-        return ResponseEntity.ok(ClubeResponse.from(clubeService.buscarPorNome(nome)));
+        Clube clube = clubeService.buscarPorNome(nome);
+        if (clube.isPrivado()) {
+            autorizacaoClube.exigirMembro(clube.getId());
+        }
+        return ResponseEntity.ok(ClubeResponse.from(clube));
     }
 
     @Operation(
@@ -113,5 +127,28 @@ public class ClubeController {
             @Parameter(description = "Id do clube") @PathVariable UUID id) {
         clubeService.deletar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Link de convite do clube", description = "Restrito ao LIDER. Gera o link na primeira chamada; as seguintes devolvem o mesmo link.")
+    @ApiResponse(responseCode = "200", description = "Link de convite")
+    @ApiResponse(responseCode = "403", description = "O usuário autenticado não é líder do clube")
+    @GetMapping("/{id}/convite-link")
+    @RequireLider("#id")
+    public ResponseEntity<ConviteLinkResponse> linkDeConvite(@Parameter(description = "Id do clube") @PathVariable UUID id) {
+        return ResponseEntity.ok(montarLink(clubeService.obterCodigoConvite(id)));
+    }
+
+    @Operation(summary = "Gera um novo link de convite", description = "Restrito ao LIDER. O link anterior para de funcionar — útil se ele vazou para fora do grupo.")
+    @ApiResponse(responseCode = "200", description = "Novo link de convite")
+    @ApiResponse(responseCode = "403", description = "O usuário autenticado não é líder do clube")
+    @PostMapping("/{id}/convite-link/regenerar")
+    @RequireLider("#id")
+    public ResponseEntity<ConviteLinkResponse> regenerarLinkDeConvite(@Parameter(description = "Id do clube") @PathVariable UUID id) {
+        return ResponseEntity.ok(montarLink(clubeService.regenerarCodigoConvite(id)));
+    }
+
+    private ConviteLinkResponse montarLink(String codigo) {
+        String base = frontUrl.endsWith("/") ? frontUrl.substring(0, frontUrl.length() - 1) : frontUrl;
+        return new ConviteLinkResponse(codigo, base + "/convite/" + codigo);
     }
 }

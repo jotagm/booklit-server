@@ -4,6 +4,7 @@ import github.jotagm.clube_livro.adapter.out.persistence.RegistroRepository;
 import github.jotagm.clube_livro.domain.clube.leitura.Registro;
 import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -12,11 +13,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class RegistroService {
 
     private final RegistroRepository registroRepository;
+    private final EstanteService estanteService;
 
     public Registro salvar(Registro registro) {
         return registroRepository.save(registro);
@@ -33,6 +36,10 @@ public class RegistroService {
 
     public List<Registro> listarPorUsuario(Integer usuarioId) {
         return registroRepository.findByUsuarioId(usuarioId);
+    }
+
+    public boolean existe(UUID leituraClubeId, Integer usuarioId) {
+        return registroRepository.findByLeituraClubeIdAndUsuarioId(leituraClubeId, usuarioId).isPresent();
     }
 
     public Registro buscarPorLeituraEUsuario(UUID leituraClubeId, Integer usuarioId) {
@@ -53,6 +60,14 @@ public class RegistroService {
         }
 
         registro.registrarProgresso(novoValor);
-        return registroRepository.save(registro);
+        Registro salvo = registroRepository.save(registro);
+        try {
+            estanteService.sincronizarProgressoDoClube(registro.getUsuario(), registro.getLeituraClube(), novoValor);
+        } catch (RuntimeException e) {
+            // A estante é um espelho: se falhar, o progresso do clube (a ação principal) continua salvo.
+            log.warn("Falha ao sincronizar estante leitura={} usuario={}: {}",
+                    leituraId, usuarioId, e.getMessage());
+        }
+        return salvo;
     }
 }

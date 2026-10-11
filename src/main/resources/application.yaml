@@ -21,10 +21,21 @@ spring:
       hibernate:
         format_sql: false
 
+  task:
+    scheduling:
+      pool:
+        size: 4
+
 booklit:
+  # Endereco publico do front: base do link de convite (https://booklit.bio/convite/<codigo>).
+  front-url: ${FRONT_URL:https://booklit.bio}
+  admin:
+    # E-mails (separados por virgula) autorizados a alterar/apagar temas globais.
+    emails: ${BOOKLIT_ADMIN_EMAILS:}
   eventos:
     habilitado: ${BOOKLIT_EVENTOS_HABILITADO:false}
     topico-arn: ${BOOKLIT_EVENTOS_TOPICO_ARN:}
+    fila-url: ${BOOKLIT_EVENTOS_FILA_URL:}
   aws:
     regiao: ${AWS_REGION:us-east-1}
     endpoint: ${BOOKLIT_AWS_ENDPOINT:}

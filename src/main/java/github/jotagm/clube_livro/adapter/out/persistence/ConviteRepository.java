@@ -9,7 +9,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ConviteRepository extends JpaRepository <Convite, UUID>{
-    Convite findByEmailDestinatario(String email);
+    List<Convite> findByEmailDestinatarioIgnoreCaseOrderByCreatedAtDesc(String email);
+    List<Convite> findByEmailDestinatarioIgnoreCaseAndStatusOrderByCreatedAtDesc(String email, ConviteStatus status);
     List<Convite> findByClubeId(UUID clubeId);
     List<Convite> findByStatusAndExpiraEmBefore(ConviteStatus status, LocalDateTime momento);
 }

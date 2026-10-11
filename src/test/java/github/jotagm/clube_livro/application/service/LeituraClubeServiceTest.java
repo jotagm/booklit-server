@@ -44,7 +44,7 @@ class LeituraClubeServiceTest {
 
     private LeituraClube leituraExemplo(UUID id) {
         return new LeituraClube(id, null, "google-123", "Dom Casmurro", "url-capa",
-                TipoMeta.PAGINA, 300, LocalDateTime.now(), LocalDateTime.now().plusDays(30));
+                TipoMeta.PAGINA, 300, LocalDateTime.now(), LocalDateTime.now().plusDays(30), null);
     }
 
     @Test
@@ -98,7 +98,7 @@ class LeituraClubeServiceTest {
         LeituraClube leitura = leituraExemplo(id);
         LeituraClubeRequest request = new LeituraClubeRequest(
                 UUID.randomUUID(), "google-456", "Memórias Póstumas", "url-capa",
-                TipoMeta.PAGINA, 300, LocalDateTime.now(), LocalDateTime.now().plusDays(30));
+                TipoMeta.PAGINA, 300, LocalDateTime.now(), LocalDateTime.now().plusDays(30), null);
 
         when(leituraClubeRepository.findById(id)).thenReturn(Optional.of(leitura));
         when(leituraClubeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -114,7 +114,7 @@ class LeituraClubeServiceTest {
         LocalDateTime inicio = LocalDateTime.now();
         LeituraClubeRequest request = new LeituraClubeRequest(
                 UUID.randomUUID(), "google-789", "Grande Sertão", "url-capa",
-                TipoMeta.PAGINA, 300, inicio, inicio.minusDays(1));
+                TipoMeta.PAGINA, 300, inicio, inicio.minusDays(1), null);
 
         assertThatThrownBy(() -> leituraClubeService.criar(request))
                 .isInstanceOf(IntervaloInvalidoException.class);
@@ -127,7 +127,7 @@ class LeituraClubeServiceTest {
         LocalDateTime instante = LocalDateTime.now();
         LeituraClubeRequest request = new LeituraClubeRequest(
                 UUID.randomUUID(), "google-789", "Grande Sertão", "url-capa",
-                TipoMeta.PAGINA, 300, instante, instante);
+                TipoMeta.PAGINA, 300, instante, instante, null);
 
         assertThatThrownBy(() -> leituraClubeService.criar(request))
                 .isInstanceOf(IntervaloInvalidoException.class);
@@ -139,7 +139,7 @@ class LeituraClubeServiceTest {
         LocalDateTime inicio = LocalDateTime.now();
         LeituraClubeRequest request = new LeituraClubeRequest(
                 UUID.randomUUID(), "google-456", "Memórias Póstumas", "url-capa",
-                TipoMeta.PAGINA, 300, inicio, inicio.minusHours(1));
+                TipoMeta.PAGINA, 300, inicio, inicio.minusHours(1), null);
 
         assertThatThrownBy(() -> leituraClubeService.atualizar(id, request))
                 .isInstanceOf(IntervaloInvalidoException.class);
@@ -152,7 +152,7 @@ class LeituraClubeServiceTest {
         // Registrar leitura que já estava em andamento é caso de uso legítimo.
         LeituraClubeRequest request = new LeituraClubeRequest(
                 UUID.randomUUID(), "google-789", "Grande Sertão", "url-capa",
-                TipoMeta.PAGINA, 300, LocalDateTime.now().minusDays(10), LocalDateTime.now().plusDays(20));
+                TipoMeta.PAGINA, 300, LocalDateTime.now().minusDays(10), LocalDateTime.now().plusDays(20), null);
 
         when(usuarioClubeService.listarPorClube(any())).thenReturn(List.of());
         when(leituraClubeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));

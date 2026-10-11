@@ -88,7 +88,7 @@ class VotacaoServiceTest {
     @Test
     void atualizar_deveSalvarERetornarVotacaoAtualizada() {
         Votacao votacao = votacaoExemplo(UUID.randomUUID());
-        votacao.encerrar(OpcaoVoto.builder().build());
+        votacao.encerrar(OpcaoVoto.builder().build(), UUID.randomUUID());
         when(votacaoRepository.save(votacao)).thenReturn(votacao);
 
         Votacao resultado = votacaoService.atualizar(votacao);

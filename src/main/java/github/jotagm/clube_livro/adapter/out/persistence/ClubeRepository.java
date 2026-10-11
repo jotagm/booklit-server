@@ -19,5 +19,8 @@ public interface ClubeRepository extends JpaRepository <Clube, UUID>{
     Optional<Clube> findByNome(String nome);
 
     @EntityGraph(attributePaths = "temas")
+    Optional<Clube> findByCodigoConvite(String codigoConvite);
+
+    @EntityGraph(attributePaths = "temas")
     Page<Clube> findByPrivadoFalseOrIdIn(Collection<UUID> ids, Pageable pageable);
 }

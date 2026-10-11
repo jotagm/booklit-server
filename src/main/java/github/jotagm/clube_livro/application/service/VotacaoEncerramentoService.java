@@ -67,20 +67,19 @@ public class VotacaoEncerramentoService {
 
         OpcaoVoto vencedora = opcaoPorId.get(desempatar(opcoesEmpatadas, votos));
 
-        VotacaoEncerrada evento = votacao.encerrar(vencedora);
-        votacaoService.atualizar(votacao);
-
-        LeituraClube leituraClube = LeituraClube.doLivroVencedor(
+        LeituraClube salva = leituraClubeService.salvar(LeituraClube.doLivroVencedor(
                 votacao.getClube(),
                 vencedora.getLivroGoogleId(),
                 vencedora.getLivroTitulo(),
-                vencedora.getLivroCapaUrl());
+                vencedora.getLivroCapaUrl()));
 
-        LeituraClube salva = leituraClubeService.salvar(leituraClube);
+        VotacaoEncerrada evento = votacao.encerrar(vencedora, salva.getId());
+        votacaoService.atualizar(votacao);
         publicadorDeEventos.publicar(evento);
 
-        log.info("Votação encerrada id={} clube={} vencedor='{}' eventId={}",
-                votacao.getId(), votacao.getClube().getId(), vencedora.getLivroTitulo(), evento.eventId());
+        log.info("Votação encerrada id={} clube={} vencedor='{}' leitura={} eventId={}",
+                votacao.getId(), votacao.getClube().getId(), vencedora.getLivroTitulo(),
+                salva.getId(), evento.eventId());
 
         return salva;
     }

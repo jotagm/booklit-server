@@ -1,7 +1,11 @@
 package github.jotagm.clube_livro.application.service;
 
 import github.jotagm.clube_livro.adapter.out.persistence.ConviteRepository;
+import github.jotagm.clube_livro.domain.clube.Clube;
+import github.jotagm.clube_livro.domain.clube.ClubePapel;
+import github.jotagm.clube_livro.domain.clube.UsuarioClube;
 import github.jotagm.clube_livro.domain.clube.convite.Convite;
+import github.jotagm.clube_livro.domain.usuario.Usuario;
 import github.jotagm.clube_livro.domain.clube.convite.ConviteStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,6 +31,15 @@ class ConviteServiceTest {
 
     @Mock
     private ConviteRepository conviteRepository;
+
+    @Mock
+    private ClubeService clubeService;
+
+    @Mock
+    private UsuarioClubeService usuarioClubeService;
+
+    @Mock
+    private LeituraClubeService leituraClubeService;
 
     @InjectMocks
     private ConviteService conviteService;
@@ -70,7 +84,8 @@ class ConviteServiceTest {
     @Test
     void buscarPorEmailDestinatario_deveRetornarConvite() {
         Convite convite = conviteExemplo(UUID.randomUUID());
-        when(conviteRepository.findByEmailDestinatario("convidado@email.com")).thenReturn(convite);
+        when(conviteRepository.findByEmailDestinatarioIgnoreCaseOrderByCreatedAtDesc("convidado@email.com"))
+                .thenReturn(List.of(convite));
 
         Convite resultado = conviteService.buscarPorEmailDestinatario("convidado@email.com");
 
@@ -135,5 +150,49 @@ class ConviteServiceTest {
 
         assertThat(quantidade).isZero();
         verify(conviteRepository).saveAll(List.of());
+    }
+
+    @Test
+    void listarPendentesDoUsuario_deveIgnorarConvitesJaVencidos() {
+        Convite valido = conviteExemplo(UUID.randomUUID());
+        Convite vencido = new Convite(UUID.randomUUID(), null, null, "convidado@email.com", ConviteStatus.PENDENTE,
+                LocalDateTime.now().minusMinutes(1), LocalDateTime.now().minusDays(8));
+        when(conviteRepository.findByEmailDestinatarioIgnoreCaseAndStatusOrderByCreatedAtDesc("convidado@email.com", ConviteStatus.PENDENTE))
+                .thenReturn(List.of(valido, vencido));
+
+        assertThat(conviteService.listarPendentesDoUsuario("convidado@email.com")).containsExactly(valido);
+    }
+
+    @Test
+    void entrarPorCodigo_deveAdicionarComoMembroEIniciarRegistroNaLeituraAtiva() {
+        Clube clube = Clube.builder().id(UUID.randomUUID()).nome("Clube").build();
+        Usuario usuario = Usuario.builder().id(7).email("novo@email.com").build();
+        when(clubeService.buscarPorCodigoConvite("abc123")).thenReturn(clube);
+        when(usuarioClubeService.listarPorClube(clube.getId())).thenReturn(List.of());
+
+        Clube resultado = conviteService.entrarPorCodigo("abc123", usuario);
+
+        assertThat(resultado).isEqualTo(clube);
+        verify(usuarioClubeService).adicionar(usuario, clube, ClubePapel.MEMBRO);
+        verify(leituraClubeService).iniciarRegistroNaLeituraAtiva(clube.getId(), usuario);
+    }
+
+    @Test
+    void entrarPorCodigo_deveSerIdempotenteParaQuemJaEMembro() {
+        Clube clube = Clube.builder().id(UUID.randomUUID()).nome("Clube").build();
+        Usuario usuario = Usuario.builder().id(7).email("membro@email.com").build();
+        when(clubeService.buscarPorCodigoConvite("abc123")).thenReturn(clube);
+        when(usuarioClubeService.listarPorClube(clube.getId()))
+                .thenReturn(List.of(UsuarioClube.novo(usuario, clube, ClubePapel.MEMBRO)));
+
+        conviteService.entrarPorCodigo("abc123", usuario);
+
+        verify(usuarioClubeService, never()).adicionar(any(), any(), any());
+    }
+
+    @Test
+    void pertenceA_deveIgnorarMaiusculas() {
+        Convite convite = conviteExemplo(UUID.randomUUID());
+        assertThat(convite.pertenceA("Convidado@Email.com")).isTrue();
     }
 }

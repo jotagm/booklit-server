@@ -7,7 +7,8 @@ import java.util.UUID;
 
 public record OpcaoVotoRequest(
         @NotNull UUID votacaoId,
-        @NotNull Integer sugeridoPorId,
+        /** Ignorado: quem sugere é sempre o usuário autenticado. Mantido para compatibilidade. */
+        @Deprecated Integer sugeridoPorId,
         @NotBlank String livroGoogleId,
         @NotBlank String livroTitulo,
         String livroCapaUrl

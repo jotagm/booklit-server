@@ -1,9 +1,5 @@
 package github.jotagm.clube_livro.configs;
 
-import github.jotagm.clube_livro.application.service.UsuarioClubeService;
-import github.jotagm.clube_livro.application.service.UsuarioService;
-import github.jotagm.clube_livro.domain.clube.ClubePapel;
-import github.jotagm.clube_livro.domain.clube.UsuarioClube;
 import github.jotagm.clube_livro.domain.exceptions.AcessoNegadoException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
@@ -18,7 +14,6 @@ import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
@@ -29,8 +24,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class RequireLiderAspect {
 
-    private final UsuarioService usuarioService;
-    private final UsuarioClubeService usuarioClubeService;
+    private final AutorizacaoClube autorizacaoClube;
     private final BeanFactory beanFactory;
 
     private final ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
@@ -39,25 +33,20 @@ public class RequireLiderAspect {
     @Before("@annotation(requireLider)")
     public void verificar(JoinPoint joinPoint, RequireLider requireLider) {
         UUID clubeId = resolverClubeId(joinPoint, requireLider.value());
-        Usuario usuario = usuarioAutenticado();
+        Usuario usuario = autorizacaoClube.usuarioAutenticado();
 
-        if (!isLider(usuario.getId(), clubeId)) {
+        if (!autorizacaoClube.isLider(usuario.getId(), clubeId)) {
             throw new AcessoNegadoException();
         }
     }
 
-    private Usuario usuarioAutenticado() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return usuarioService.buscarPorEmail(email);
-    }
-
-    private boolean isLider(Integer usuarioId, UUID clubeId) {
-        try {
-            UsuarioClube usuarioClube = usuarioClubeService.buscarPorUsuarioEClube(usuarioId, clubeId);
-            return usuarioClube.getPapel() == ClubePapel.LIDER;
-        } catch (RuntimeException e) {
-            return false;
+    @Before("@annotation(requireMembro)")
+    public void verificarMembro(JoinPoint joinPoint, RequireMembro requireMembro) {
+        UUID clubeId = resolverClubeId(joinPoint, requireMembro.value());
+        if (requireMembro.permitirClubePublico() && autorizacaoClube.isClubePublico(clubeId)) {
+            return;
         }
+        autorizacaoClube.exigirMembro(clubeId);
     }
 
     private UUID resolverClubeId(JoinPoint joinPoint, String expressao) {

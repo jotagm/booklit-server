@@ -1,5 +1,6 @@
 package github.jotagm.clube_livro.adapter.in.rest;
 
+import github.jotagm.clube_livro.configs.RequireMembro;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.VotacaoRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.LeituraClubeResponse;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.VotacaoResponse;
@@ -46,6 +47,7 @@ public class VotacaoController {
     @ApiResponse(responseCode = "200", description = "Votação encontrada")
     @ApiResponse(responseCode = "404", description = "Votação não encontrada")
     @GetMapping("/{id}")
+    @RequireMembro("@votacaoService.buscarPorId(#id).clube.id")
     public ResponseEntity<VotacaoResponse> buscarPorId(@Parameter(description = "Id da votação") @PathVariable UUID id) {
         return ResponseEntity.ok(VotacaoResponse.from(votacaoService.buscarPorId(id)));
     }
@@ -53,6 +55,7 @@ public class VotacaoController {
     @Operation(summary = "Lista as votações de um clube")
     @ApiResponse(responseCode = "200", description = "Votações do clube")
     @GetMapping("/clube/{clubeId}")
+    @RequireMembro("#clubeId")
     public ResponseEntity<List<VotacaoResponse>> listarPorClube(@Parameter(description = "Id do clube") @PathVariable UUID clubeId) {
         return ResponseEntity.ok(votacaoService.listarPorClube(clubeId).stream()
                 .map(VotacaoResponse::from)
@@ -66,6 +69,7 @@ public class VotacaoController {
     @ApiResponse(responseCode = "404", description = "Votação não encontrada")
     @ApiResponse(responseCode = "422", description = "`dataEncerramento` não é posterior a `dataAbertura`")
     @PutMapping("/{id}")
+    @RequireLider("@votacaoService.buscarPorId(#id).clube.id")
     public ResponseEntity<VotacaoResponse> atualizar(@Parameter(description = "Id da votação") @PathVariable UUID id,
                                                      @RequestBody @Valid VotacaoRequest request) {
         return ResponseEntity.ok(VotacaoResponse.from(votacaoService.atualizar(id, request)));
@@ -75,6 +79,7 @@ public class VotacaoController {
     @ApiResponse(responseCode = "204", description = "Votação removida")
     @ApiResponse(responseCode = "404", description = "Votação não encontrada")
     @DeleteMapping("/{id}")
+    @RequireLider("@votacaoService.buscarPorId(#id).clube.id")
     public ResponseEntity<Void> deletar(@Parameter(description = "Id da votação") @PathVariable UUID id) {
         votacaoService.deletar(id);
         return ResponseEntity.noContent().build();

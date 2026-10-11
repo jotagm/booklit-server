@@ -4,6 +4,7 @@ import github.jotagm.clube_livro.adapter.in.rest.dto.response.ErroResponse;
 import github.jotagm.clube_livro.domain.exceptions.AcessoNegadoException;
 import github.jotagm.clube_livro.domain.exceptions.ComentarioAninhadoException;
 import github.jotagm.clube_livro.domain.exceptions.IntervaloInvalidoException;
+import github.jotagm.clube_livro.domain.exceptions.RegraDeNegocioException;
 import github.jotagm.clube_livro.domain.exceptions.LivroExternoIndisponivelException;
 import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import github.jotagm.clube_livro.domain.exceptions.UsuarioJaVotouException;
@@ -71,6 +72,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ComentarioAninhadoException.class)
     public ResponseEntity<ErroResponse> tratarComentarioAninhado(ComentarioAninhadoException ex,
                                                                   HttpServletRequest request) {
+        return construir(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(RegraDeNegocioException.class)
+    public ResponseEntity<ErroResponse> tratarRegraDeNegocio(RegraDeNegocioException ex,
+                                                              HttpServletRequest request) {
         return construir(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
     }
 
@@ -179,6 +186,7 @@ public class GlobalExceptionHandler {
         if (causa instanceof VotacaoSemVotosException) return HttpStatus.UNPROCESSABLE_ENTITY;
         if (causa instanceof ComentarioAninhadoException) return HttpStatus.UNPROCESSABLE_ENTITY;
         if (causa instanceof IntervaloInvalidoException) return HttpStatus.UNPROCESSABLE_ENTITY;
+        if (causa instanceof RegraDeNegocioException) return HttpStatus.UNPROCESSABLE_ENTITY;
         if (causa instanceof LivroExternoIndisponivelException) return HttpStatus.BAD_GATEWAY;
         return null;
     }

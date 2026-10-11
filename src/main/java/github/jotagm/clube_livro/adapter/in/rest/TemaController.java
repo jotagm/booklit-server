@@ -3,6 +3,7 @@ package github.jotagm.clube_livro.adapter.in.rest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.TemaRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.TemaResponse;
 import github.jotagm.clube_livro.application.service.TemaService;
+import github.jotagm.clube_livro.configs.AutorizacaoAdmin;
 import github.jotagm.clube_livro.domain.tema.Tema;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -25,6 +26,7 @@ import java.util.UUID;
 public class TemaController {
 
     private final TemaService temaService;
+    private final AutorizacaoAdmin autorizacaoAdmin;
 
     @Operation(summary = "Cria um tema")
     @ApiResponse(responseCode = "201", description = "Tema criado")
@@ -69,6 +71,7 @@ public class TemaController {
     public ResponseEntity<TemaResponse> atualizar(
             @Parameter(description = "Id do tema") @PathVariable UUID id,
             @RequestBody @Valid TemaRequest request) {
+        autorizacaoAdmin.exigirAdmin();
         Tema tema = temaService.buscarPorId(id);
         tema.renomear(request.nome());
 
@@ -81,6 +84,7 @@ public class TemaController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(
             @Parameter(description = "Id do tema") @PathVariable UUID id) {
+        autorizacaoAdmin.exigirAdmin();
         temaService.deletar(id);
         return ResponseEntity.noContent().build();
     }

@@ -16,7 +16,8 @@ public record LeituraClubeResponse(
         TipoMeta tipoMeta,
         int valorMeta,
         LocalDateTime dataInicio,
-        LocalDateTime dataFim
+        LocalDateTime dataFim,
+        String spotifyUrl
 ) {
     public static LeituraClubeResponse from(LeituraClube leitura) {
         return new LeituraClubeResponse(
@@ -29,7 +30,8 @@ public record LeituraClubeResponse(
                 leitura.getTipoMeta(),
                 leitura.getValorMeta(),
                 leitura.getDataInicio(),
-                leitura.getDataFim()
+                leitura.getDataFim(),
+                leitura.getSpotifyUrl()
         );
     }
 }

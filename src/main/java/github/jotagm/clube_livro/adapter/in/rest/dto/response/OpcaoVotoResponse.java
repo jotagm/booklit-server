@@ -11,9 +11,15 @@ public record OpcaoVotoResponse(
         String nomeSugeridoPor,
         String livroGoogleId,
         String livroTitulo,
-        String livroCapaUrl
+        String livroCapaUrl,
+        /** Quantos membros do clube têm este livro no "quero ler" da estante pessoal. */
+        long membrosQueremLer
 ) {
     public static OpcaoVotoResponse from(OpcaoVoto opcaoVoto) {
+        return from(opcaoVoto, 0);
+    }
+
+    public static OpcaoVotoResponse from(OpcaoVoto opcaoVoto, long membrosQueremLer) {
         return new OpcaoVotoResponse(
                 opcaoVoto.getId(),
                 opcaoVoto.getVotacao().getId(),
@@ -21,7 +27,8 @@ public record OpcaoVotoResponse(
                 opcaoVoto.getSugeridoPor().getNome(),
                 opcaoVoto.getLivroGoogleId(),
                 opcaoVoto.getLivroTitulo(),
-                opcaoVoto.getLivroCapaUrl()
+                opcaoVoto.getLivroCapaUrl(),
+                membrosQueremLer
         );
     }
 }

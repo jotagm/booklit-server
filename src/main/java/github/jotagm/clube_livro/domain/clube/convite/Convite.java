@@ -55,7 +55,7 @@ public class Convite {
     }
 
     public boolean pertenceA(String email) {
-        return emailDestinatario.equals(email);
+        return emailDestinatario != null && emailDestinatario.equalsIgnoreCase(email);
     }
 
     public static Convite novo(Clube clube, Usuario convidadoPor, String emailDestinatario,

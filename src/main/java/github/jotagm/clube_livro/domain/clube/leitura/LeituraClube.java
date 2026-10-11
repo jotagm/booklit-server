@@ -43,6 +43,14 @@ public class LeituraClube {
     @Column(name = "data_fim")
     LocalDateTime dataFim;
 
+    /** Playlist/álbum/podcast/audiobook do Spotify da leitura — ver {@link LinkSpotify}. */
+    @Column(name = "spotify_url")
+    String spotifyUrl;
+
+    public void definirSpotify(String url) {
+        this.spotifyUrl = LinkSpotify.normalizar(url);
+    }
+
     public void redefinir(String livroGoogleId, String livroTitulo, String livroCapaUrl,
                           TipoMeta tipoMeta, int valorMeta,
                           LocalDateTime dataInicio, LocalDateTime dataFim) {
