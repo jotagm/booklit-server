@@ -13,4 +13,13 @@ public interface VotacaoRepository extends JpaRepository <Votacao, UUID>{
     List<Votacao> findByClubeId(UUID clubeId);
 
     List<Votacao> findByStatusAndDataEncerramentoBefore(VotacaoStatus status, LocalDateTime momento);
+
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT v FROM Votacao v
+            WHERE v.clube.id IN :clubeIds
+            ORDER BY v.dataAbertura DESC
+            """)
+    List<Votacao> recentesDosClubes(@org.springframework.data.repository.query.Param("clubeIds") java.util.Collection<UUID> clubeIds,
+                                    org.springframework.data.domain.Pageable pageable);
+
 }

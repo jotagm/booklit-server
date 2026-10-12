@@ -22,4 +22,9 @@ public interface LeituraClubeRepository extends JpaRepository <LeituraClube, UUI
     Optional<LeituraClube> findLeituraAtiva(@Param("clubeId") UUID clubeId, @Param("agora") LocalDateTime agora);
 
     UUID clube(Clube clube);
+
+    @Query("SELECT l FROM LeituraClube l WHERE l.clube.id IN :clubeIds ORDER BY l.dataInicio DESC")
+    List<LeituraClube> recentesDosClubes(@Param("clubeIds") java.util.Collection<UUID> clubeIds,
+                                         org.springframework.data.domain.Pageable pageable);
+
 }

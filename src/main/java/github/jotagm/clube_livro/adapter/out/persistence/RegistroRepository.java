@@ -14,4 +14,14 @@ public interface RegistroRepository extends JpaRepository<Registro, UUID> {
     List<Registro> findByUsuarioId(Integer usuarioId);
 
     Optional<Registro> findByLeituraClubeIdAndUsuarioId(UUID leituraClubeId, Integer usuarioId);
+
+    /** Progressos mais recentes dos clubes informados (alimenta o feed). Ignora registros ainda zerados. */
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT r FROM Registro r
+            WHERE r.leituraClube.clube.id IN :clubeIds AND r.valorAtual > 0
+            ORDER BY r.updatedAt DESC
+            """)
+    List<Registro> recentesDosClubes(@org.springframework.data.repository.query.Param("clubeIds") java.util.Collection<UUID> clubeIds,
+                                     org.springframework.data.domain.Pageable pageable);
+
 }

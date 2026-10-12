@@ -67,9 +67,23 @@ public class LeituraClubeService {
     @Transactional
     public int iniciarRegistrosDosMembros(UUID leituraId) {
         LeituraClube leitura = buscarPorId(leituraId);
+        return garantirRegistrosDosMembros(leitura);
+    }
+
+    /**
+     * Cria o registro (progresso 0) de cada membro que ainda não tem um nesta leitura.
+     * Idempotente: pode rodar pelo consumidor do evento e pelo {@link #atualizar} sem duplicar.
+     */
+    private int garantirRegistrosDosMembros(LeituraClube leitura) {
         List<UsuarioClube> membros = usuarioClubeService.listarPorClube(leitura.getClube().getId());
-        membros.forEach(uc -> registroService.salvar(Registro.iniciar(leitura, uc.getUsuario())));
-        return membros.size();
+        int criados = 0;
+        for (UsuarioClube uc : membros) {
+            if (!registroService.existe(leitura.getId(), uc.getUsuario().getId())) {
+                registroService.salvar(Registro.iniciar(leitura, uc.getUsuario()));
+                criados++;
+            }
+        }
+        return criados;
     }
 
     /**
@@ -103,7 +117,12 @@ public class LeituraClubeService {
                 request.dataInicio(),
                 request.dataFim());
         leitura.definirSpotify(request.spotifyUrl());
-        return leituraClubeRepository.save(leitura);
+        LeituraClube salva = leituraClubeRepository.save(leitura);
+        // A leitura vencedora de uma votação nasce sem meta/datas e sem registros; os
+        // registros só eram criados pelo consumidor do evento VotacaoEncerrada, que fica
+        // desligado sem SNS/SQS. Ao completar a leitura aqui, ninguém fica sem registro.
+        garantirRegistrosDosMembros(salva);
+        return salva;
     }
 
     /** Troca só o link do Spotify, sem exigir o corpo inteiro da leitura. */

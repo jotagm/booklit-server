@@ -188,6 +188,114 @@ class AutorizacaoEConviteIntegracaoTest {
                 .andExpect(status().isConflict());
     }
 
+    @Test
+    void perfilSoApareceParaQuemDivideClubeEEditaSemSenha() throws Exception {
+        mockMvc.perform(post("/estante").header("Authorization", bearer(tokenLider))
+                        .contentType(APPLICATION_JSON)
+                        .content("{\"livroGoogleId\":\"g-9\",\"livroTitulo\":\"Dom Casmurro\",\"totalPaginas\":200,\"status\":\"LENDO\"}"))
+                .andExpect(status().isCreated());
+        mockMvc.perform(patch("/usuarios/me/perfil").header("Authorization", bearer(tokenLider))
+                        .contentType(APPLICATION_JSON).content("{\"nome\":\"Capitu\",\"bio\":\"leio no ônibus\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.bio").value("leio no ônibus"));
+
+        // Sem clube em comum: 404, não vaza nem a existência da conta.
+        mockMvc.perform(get("/usuarios/" + idLider + "/perfil").header("Authorization", bearer(tokenOutro)))
+                .andExpect(status().isNotFound());
+
+        String codigo = json.readTree(mockMvc.perform(get("/clubes/" + clubeId + "/convite-link")
+                        .header("Authorization", bearer(tokenLider)))
+                .andReturn().getResponse().getContentAsString()).get("codigo").asText();
+        mockMvc.perform(post("/convites/link/" + codigo + "/entrar").header("Authorization", bearer(tokenOutro)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/usuarios/" + idLider + "/perfil").header("Authorization", bearer(tokenOutro)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome").value("Capitu"))
+                .andExpect(jsonPath("$.bio").value("leio no ônibus"))
+                .andExpect(jsonPath("$.ehVoce").value(false))
+                .andExpect(jsonPath("$.lendoAgora[0].titulo").value("Dom Casmurro"))
+                .andExpect(jsonPath("$.clubes.length()").value(1))
+                .andExpect(jsonPath("$.email").doesNotExist());
+
+        // A senha continua valendo depois de editar o perfil.
+        login("lider-" + json.readTree(mockMvc.perform(get("/usuarios/me")
+                .header("Authorization", bearer(tokenLider))).andReturn().getResponse().getContentAsString())
+                .get("email").asText().substring(6));
+    }
+
+    @Test
+    void feedMostraAtividadeDosClubesEAceitaUmaReacaoPorPessoa() throws Exception {
+        String codigo = json.readTree(mockMvc.perform(get("/clubes/" + clubeId + "/convite-link")
+                        .header("Authorization", bearer(tokenLider)))
+                .andReturn().getResponse().getContentAsString()).get("codigo").asText();
+        mockMvc.perform(post("/convites/link/" + codigo + "/entrar").header("Authorization", bearer(tokenOutro)))
+                .andExpect(status().isOk());
+
+        String leitura = mockMvc.perform(post("/leituras").header("Authorization", bearer(tokenLider))
+                        .contentType(APPLICATION_JSON)
+                        .content("{\"clubeId\":\"" + clubeId + "\",\"livroGoogleId\":\"g-feed\",\"livroTitulo\":\"Torto Arado\","
+                                + "\"tipoMeta\":\"PAGINA\",\"valorMeta\":300,"
+                                + "\"dataInicio\":\"" + LocalDateTime.now().minusDays(1).withNano(0) + "\","
+                                + "\"dataFim\":\"" + LocalDateTime.now().plusDays(20).withNano(0) + "\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String leituraId = json.readTree(leitura).get("id").asText();
+
+        mockMvc.perform(put("/registros/leitura/" + leituraId).header("Authorization", bearer(tokenOutro))
+                        .contentType(APPLICATION_JSON).content("{\"valorAtual\":120}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/leituras/" + leituraId + "/comentarios").header("Authorization", bearer(tokenLider))
+                        .contentType(APPLICATION_JSON).content("{\"conteudo\":\"Que começo!\"}"))
+                .andExpect(status().isCreated());
+
+        JsonNode feed = json.readTree(mockMvc.perform(get("/feed").header("Authorization", bearer(tokenLider)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        String idProgresso = null;
+        java.util.Set<String> tipos = new java.util.HashSet<>();
+        for (JsonNode item : feed) {
+            tipos.add(item.get("tipo").asText());
+            if (item.get("tipo").asText().equals("PROGRESSO")) idProgresso = item.get("id").asText();
+        }
+        org.assertj.core.api.Assertions.assertThat(tipos)
+                .contains("PROGRESSO", "COMENTARIO", "LEITURA_INICIADA", "MEMBRO_ENTROU");
+        org.assertj.core.api.Assertions.assertThat(idProgresso).startsWith("registro:");
+
+        // Reagir: uma por pessoa; trocar substitui; remover zera.
+        String corpo = "{\"clubeId\":\"" + clubeId + "\",\"alvoId\":\"" + idProgresso + "\",\"tipo\":\"FOGO\"}";
+        mockMvc.perform(put("/reacoes").header("Authorization", bearer(tokenLider))
+                        .contentType(APPLICATION_JSON).content(corpo))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reacoes.FOGO").value(1))
+                .andExpect(jsonPath("$.minhaReacao").value("FOGO"));
+        mockMvc.perform(put("/reacoes").header("Authorization", bearer(tokenLider))
+                        .contentType(APPLICATION_JSON).content(corpo.replace("FOGO", "PALMAS")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reacoes.FOGO").doesNotExist())
+                .andExpect(jsonPath("$.reacoes.PALMAS").value(1));
+        mockMvc.perform(get("/feed").header("Authorization", bearer(tokenOutro)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id=='" + idProgresso + "')].reacoes.PALMAS").value(1))
+                .andExpect(jsonPath("$[?(@.id=='" + idProgresso + "')].minhaReacao").value(org.hamcrest.Matchers.contains((Object) null)));
+        mockMvc.perform(delete("/reacoes").param("alvoId", idProgresso).header("Authorization", bearer(tokenLider)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.minhaReacao").doesNotExist());
+
+        // Quem não é do clube não reage nem filtra o feed por ele.
+        String intruso = "outro2-" + UUID.randomUUID().toString().substring(0, 8) + "@teste.dev";
+        criarUsuario(intruso);
+        String tokenIntruso = login(intruso);
+        mockMvc.perform(put("/reacoes").header("Authorization", bearer(tokenIntruso))
+                        .contentType(APPLICATION_JSON).content(corpo))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/feed").param("clubeId", clubeId).header("Authorization", bearer(tokenIntruso)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/feed").header("Authorization", bearer(tokenIntruso)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
     private int criarUsuario(String email) throws Exception {
         String resp = mockMvc.perform(post("/usuarios").contentType(APPLICATION_JSON)
                         .content("{\"nome\":\"Pessoa\",\"email\":\"" + email + "\",\"senha\":\"senha12345\"}"))

@@ -24,10 +24,23 @@ public class Usuario {
     String senhaHash;
     @Column(name = "created_at")
     LocalDateTime createdAt;
+    /** Frase curta que aparece no perfil; opcional. */
+    @Column(length = 160)
+    String bio;
+
+    /** Construtor sem bio: é o que o cadastro e os testes sempre usaram. */
+    public Usuario(Integer id, String nome, String email, String senhaHash, LocalDateTime createdAt) {
+        this(id, nome, email, senhaHash, createdAt, null);
+    }
 
     public void atualizarDados(String nome, String email) {
         this.nome = nome;
         this.email = email;
+    }
+
+    public void atualizarPerfil(String nome, String bio) {
+        this.nome = nome.trim();
+        this.bio = bio == null || bio.isBlank() ? null : bio.trim();
     }
 
     public void definirSenhaHash(String senhaHash) {

@@ -12,4 +12,13 @@ public interface UsuarioClubeRepository extends JpaRepository <UsuarioClube, UUI
     List <UsuarioClube> findByClubeId(UUID clubeId);
     Optional<UsuarioClube> findByUsuarioIdAndClubeId(Integer usuarioId, UUID clubeId);
 
+
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT uc FROM UsuarioClube uc
+            WHERE uc.clube.id IN :clubeIds AND uc.entrouEm IS NOT NULL
+            ORDER BY uc.entrouEm DESC
+            """)
+    List<UsuarioClube> entradasRecentes(@org.springframework.data.repository.query.Param("clubeIds") java.util.Collection<UUID> clubeIds,
+                                        org.springframework.data.domain.Pageable pageable);
+
 }

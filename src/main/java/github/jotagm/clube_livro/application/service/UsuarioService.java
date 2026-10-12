@@ -44,6 +44,12 @@ public class UsuarioService implements UserDetailsService {
     public Usuario buscarPorId(Integer id) {
         return usuarioRepository.findById(id).orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado"));
     }
+    /** Só nome e bio: a senha não é tocada (a sobrecarga com entidade re-hasheia o campo). */
+    public Usuario atualizarPerfil(Usuario usuario, String nome, String bio) {
+        usuario.atualizarPerfil(nome, bio);
+        return usuarioRepository.save(usuario);
+    }
+
     /** Sobrecarga mantida para quem já tem a entidade em mãos. */
     public Usuario atualizar(Usuario usuario) {
         usuario.definirSenhaHash(passwordEncoder.encode(usuario.getSenhaHash()));
