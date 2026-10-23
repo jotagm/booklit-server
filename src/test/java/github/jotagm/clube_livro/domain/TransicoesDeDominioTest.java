@@ -4,6 +4,7 @@ import github.jotagm.clube_livro.domain.clube.Clube;
 import github.jotagm.clube_livro.domain.clube.ClubePapel;
 import github.jotagm.clube_livro.domain.clube.UsuarioClube;
 import github.jotagm.clube_livro.domain.clube.convite.Convite;
+import github.jotagm.clube_livro.domain.exceptions.ConflitoException;
 import github.jotagm.clube_livro.domain.clube.convite.ConviteStatus;
 import github.jotagm.clube_livro.domain.clube.leitura.Comentario;
 import github.jotagm.clube_livro.domain.clube.leitura.LeituraClube;
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Antes estas mudanças de estado eram feitas por setters espalhados pelos serviços. Agora
@@ -27,17 +29,38 @@ class TransicoesDeDominioTest {
 
     @Test
     void conviteAceitoERecusadoMudamDeStatus() {
-        Convite convite = Convite.novo(new Clube(), new Usuario(), "a@teste.dev",
-                LocalDateTime.now().plusDays(1));
+        Convite aceito = conviteNovo();
+        aceito.aceitar();
+        assertThat(aceito.getStatus()).isEqualTo(ConviteStatus.ACEITO);
 
+        Convite recusado = conviteNovo();
+        recusado.recusar();
+        assertThat(recusado.getStatus()).isEqualTo(ConviteStatus.RECUSADO);
+
+        Convite expirado = conviteNovo();
+        expirado.expirar();
+        assertThat(expirado.getStatus()).isEqualTo(ConviteStatus.EXPIRADO);
+    }
+
+    /** Convite é respondido uma vez só: aceitar e depois recusar (ou o contrário) é conflito. */
+    @Test
+    void conviteJaRespondidoNaoMudaMais() {
+        Convite convite = conviteNovo();
         convite.aceitar();
+
+        assertThatThrownBy(convite::recusar)
+                .isInstanceOf(ConflitoException.class)
+                .hasMessage("Este convite já foi aceito");
+        assertThatThrownBy(convite::aceitar).isInstanceOf(ConflitoException.class);
         assertThat(convite.getStatus()).isEqualTo(ConviteStatus.ACEITO);
 
-        convite.recusar();
-        assertThat(convite.getStatus()).isEqualTo(ConviteStatus.RECUSADO);
+        Convite expirado = conviteNovo();
+        expirado.expirar();
+        assertThatThrownBy(expirado::aceitar).hasMessage("Este convite expirou");
+    }
 
-        convite.expirar();
-        assertThat(convite.getStatus()).isEqualTo(ConviteStatus.EXPIRADO);
+    private static Convite conviteNovo() {
+        return Convite.novo(new Clube(), new Usuario(), "a@teste.dev", LocalDateTime.now().plusDays(1));
     }
 
     @Test
