@@ -20,11 +20,27 @@
         <jazzer.version>0.30.0</jazzer.version>
     </properties>
 
+    <!--
+        O BOM alinha todos os artefatos do JUnit numa versão só. Sem ele, o jazzer-junit puxa
+        um junit-platform-engine mais antigo, que ganha do resolvido via junit-jupiter (fica
+        mais perto na árvore), e o surefire falha com "junit-jupiter failed to discover tests".
+    -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
         <!--
