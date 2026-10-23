@@ -104,7 +104,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(LimiteDeEmissaoException.class)
     public ResponseEntity<ErroResponse> tratarLimiteDeEmissao(LimiteDeEmissaoException ex,
                                                                HttpServletRequest request) {
-        long segundos = Math.max(1, ex.tenteNovamenteEm().toSeconds());
+        long segundos = ex.segundosParaTentarDeNovo();
         ResponseEntity<ErroResponse> resposta = construir(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), request);
         return ResponseEntity.status(resposta.getStatusCode())
                 .header(HttpHeaders.RETRY_AFTER, String.valueOf(segundos))
