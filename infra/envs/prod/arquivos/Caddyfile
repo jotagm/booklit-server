@@ -1,0 +1,7 @@
+# Proxy reverso na frente do Spring. Com API_DOMINIO definido (ex.: api.booklit.bio) o Caddy
+# emite e renova sozinho o certificado do Let's Encrypt e redireciona HTTP para HTTPS; sem
+# ele, atende só HTTP na porta 80, para testar pelo IP antes de configurar o DNS.
+{$API_DOMINIO} {
+	encode zstd gzip
+	reverse_proxy api:8080
+}

@@ -1,0 +1,44 @@
+# Gerado pelo Terraform (infra/envs/prod). IMAGE e API_DOMINIO vêm do .env que o
+# deploy.sh escreve; o resto da configuração vem do SSM em app.env.
+services:
+  api:
+    image: $${IMAGE}
+    restart: unless-stopped
+    env_file: app.env
+    environment:
+      # t4g.micro tem 1 GB: heap em ~70% do limite do container, GC serial (menos memória
+      # que o G1) e morre de vez num OOM para o restart subir limpo, em vez de ficar zumbi.
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError"
+    mem_limit: 700m
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${regiao}
+        awslogs-group: ${log_group}
+        awslogs-stream: api
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_DOMINIO: $${API_DOMINIO:-:80}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    mem_limit: 64m
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${regiao}
+        awslogs-group: ${log_group}
+        awslogs-stream: caddy
+
+volumes:
+  caddy_data:
+  caddy_config:

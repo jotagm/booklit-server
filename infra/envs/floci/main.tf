@@ -32,3 +32,12 @@ output "db_endpoint" {
 output "db_port" {
   value = module.database.port
 }
+
+module "email" {
+  source    = "../../modules/email"
+  remetente = "no-reply@booklit.bio"
+}
+
+output "email_remetente" {
+  value = module.email.remetente
+}

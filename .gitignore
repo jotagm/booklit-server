@@ -53,3 +53,7 @@ build/
 *.tfstate
 *.tfstate.*
 crash.log
+
+### Terraform prod ###
+infra/**/terraform.tfvars
+*.tfplan

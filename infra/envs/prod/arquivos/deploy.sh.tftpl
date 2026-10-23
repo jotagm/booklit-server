@@ -1,0 +1,59 @@
+#!/bin/bash
+# Deploy da API do Booklit. Chamado pelo pipeline via SSM Run Command:
+#   /opt/booklit/deploy.sh <conta>.dkr.ecr.<regiao>.amazonaws.com/booklit-api:<sha>
+# Também serve para rodar à mão pelo Session Manager (ex.: depois de mudar um parâmetro no SSM).
+#
+# 1. login no ECR  2. configuração do SSM -> app.env  3. sobe a imagem nova
+# 4. espera a API responder; se não responder em 5 min, volta para a imagem anterior.
+set -euo pipefail
+
+IMAGEM="$${1:?uso: deploy.sh <imagem:tag>}"
+REGIAO="${regiao}"
+PREFIXO="${prefixo_ssm}"
+cd /opt/booklit
+
+REGISTRO="$${IMAGEM%%/*}"
+aws ecr get-login-password --region "$REGIAO" | docker login --username AWS --password-stdin "$REGISTRO"
+
+# Segredos só no disco desta máquina, legíveis só pelo root.
+umask 077
+aws ssm get-parameters-by-path --region "$REGIAO" --path "$PREFIXO" --recursive --with-decryption \
+  --query 'Parameters[].[Name,Value]' --output text \
+  | awk -F'\t' -v prefixo="$PREFIXO/" '{ sub("^" prefixo, "", $1); print $1 "=" $2 }' > app.env.novo
+if ! grep -q '^JDBC_DATABASE_URL=' app.env.novo; then
+  echo "Configuração incompleta em $PREFIXO (sem JDBC_DATABASE_URL); abortando" >&2
+  exit 1
+fi
+mv app.env.novo app.env
+
+ANTERIOR="$(grep '^IMAGE=' .env 2>/dev/null | cut -d= -f2- || true)"
+DOMINIO="$(grep '^API_DOMINIO=' app.env | cut -d= -f2- || true)"
+
+escrever_env() {
+  printf 'IMAGE=%s\n' "$1" > .env
+  if [ -n "$DOMINIO" ]; then printf 'API_DOMINIO=%s\n' "$DOMINIO" >> .env; fi
+}
+
+escrever_env "$IMAGEM"
+docker compose pull api
+docker compose up -d --remove-orphans
+
+# Spring numa t4g.micro leva ~40-90 s para subir. /v3/api-docs é público e só responde
+# com o contexto inteiro de pé (banco incluso).
+for _ in $(seq 1 60); do
+  if docker compose exec -T caddy wget -q -O /dev/null http://api:8080/v3/api-docs 2>/dev/null; then
+    echo "Deploy ok: $IMAGEM"
+    docker image prune -af --filter "until=168h" >/dev/null || true
+    exit 0
+  fi
+  sleep 5
+done
+
+echo "A API não respondeu em 5 minutos." >&2
+docker compose logs --tail 80 api >&2 || true
+if [ -n "$ANTERIOR" ] && [ "$ANTERIOR" != "$IMAGEM" ]; then
+  echo "Voltando para $ANTERIOR" >&2
+  escrever_env "$ANTERIOR"
+  docker compose up -d
+fi
+exit 1

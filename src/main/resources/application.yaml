@@ -39,6 +39,20 @@ booklit:
   aws:
     regiao: ${AWS_REGION:us-east-1}
     endpoint: ${BOOKLIT_AWS_ENDPOINT:}
+  auth:
+    otp:
+      # Chave do HMAC dos codigos, base64 com 32+ bytes (openssl rand -base64 32).
+      # Vazia = chave aleatoria por instancia (ok em dev; codigos morrem no restart).
+      chave-hmac: ${BOOKLIT_OTP_CHAVE_HMAC:}
+      validade: ${BOOKLIT_OTP_VALIDADE:10m}
+      max-tentativas: ${BOOKLIT_OTP_MAX_TENTATIVAS:5}
+      intervalo-reenvio: ${BOOKLIT_OTP_INTERVALO_REENVIO:60s}
+      max-envios-por-hora: ${BOOKLIT_OTP_MAX_ENVIOS_POR_HORA:5}
+    email:
+      # Liga o envio pelo SES v2. Com booklit.aws.endpoint apontando para o Floci, os
+      # e-mails ficam em GET <floci>/_aws/ses.
+      habilitado: ${BOOKLIT_EMAIL_HABILITADO:false}
+      remetente: ${BOOKLIT_EMAIL_REMETENTE:no-reply@booklit.bio}
 
 jwt:
   secret: ${JWT_SECRET}

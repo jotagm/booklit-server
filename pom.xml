@@ -109,6 +109,16 @@
 			<artifactId>sqs</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>sesv2</artifactId>
+		</dependency>
+		<!-- Núcleo de autenticação (./auth-core, sem Spring). Antes do build: mvn -f auth-core install -->
+		<dependency>
+			<groupId>github.jotagm</groupId>
+			<artifactId>auth-core</artifactId>
+			<version>0.1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
 			<scope>test</scope>

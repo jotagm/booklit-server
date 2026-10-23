@@ -6,5 +6,7 @@ target/
 .idea/
 .vscode/
 *.md
+auth-core/target/
+infra/
 *.log
 docker-compose.yaml

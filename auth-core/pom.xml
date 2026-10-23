@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>github.jotagm</groupId>
+    <artifactId>auth-core</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <name>auth-core</name>
+    <description>
+        Núcleo de autenticação sem framework: OTP por e-mail (e, nas próximas fatias, senha,
+        tokens, risco, RBAC e PIN). Sem Spring de propósito: a lógica sensível fica isolada,
+        testável e fuzzável sem subir contexto.
+    </description>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <junit.version>5.11.4</junit.version>
+        <jazzer.version>0.30.0</jazzer.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!--
+            Fuzzing guiado por cobertura. Num `mvn test` comum os @FuzzTest rodam só o corpus
+            (src/test/resources/.../*Inputs) como teste de regressão; para fuzzar de verdade:
+            JAZZER_FUZZ=1 mvn test -Dtest=CodigoOtpFuzzTest
+        -->
+        <dependency>
+            <groupId>com.code-intelligence</groupId>
+            <artifactId>jazzer-junit</artifactId>
+            <version>${jazzer.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>

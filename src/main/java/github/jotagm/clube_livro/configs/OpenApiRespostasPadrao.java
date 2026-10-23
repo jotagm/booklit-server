@@ -54,6 +54,7 @@ public class OpenApiRespostasPadrao {
     private boolean ehPublico(HandlerMethod handlerMethod) {
         String classe = handlerMethod.getBeanType().getSimpleName();
         return classe.equals("AuthController")
+                || classe.equals("OtpController")
                 || (classe.equals("UsuarioController") && handlerMethod.getMethod().getName().equals("criar"));
     }
 

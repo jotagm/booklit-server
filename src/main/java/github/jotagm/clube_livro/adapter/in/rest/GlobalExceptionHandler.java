@@ -1,5 +1,6 @@
 package github.jotagm.clube_livro.adapter.in.rest;
 
+import github.jotagm.auth.otp.LimiteDeEmissaoException;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.ErroResponse;
 import github.jotagm.clube_livro.domain.exceptions.AcessoNegadoException;
 import github.jotagm.clube_livro.domain.exceptions.ComentarioAninhadoException;
@@ -12,8 +13,10 @@ import github.jotagm.clube_livro.domain.exceptions.VotacaoSemVotosException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -85,6 +88,27 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErroResponse> tratarIntervaloInvalido(IntervaloInvalidoException ex,
                                                                  HttpServletRequest request) {
         return construir(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
+    }
+
+    /**
+     * JSON malformado ou valor fora do enum (ex.: finalidade inexistente) é erro do cliente.
+     * Sem este handler a rede de segurança abaixo transformava isso em 500.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErroResponse> tratarCorpoIlegivel(HttpMessageNotReadableException ex,
+                                                             HttpServletRequest request) {
+        return construir(HttpStatus.BAD_REQUEST, "Corpo da requisição inválido", request);
+    }
+
+    /** 429 com Retry-After em segundos, para o app mostrar a contagem regressiva do "reenviar". */
+    @ExceptionHandler(LimiteDeEmissaoException.class)
+    public ResponseEntity<ErroResponse> tratarLimiteDeEmissao(LimiteDeEmissaoException ex,
+                                                               HttpServletRequest request) {
+        long segundos = Math.max(1, ex.tenteNovamenteEm().toSeconds());
+        ResponseEntity<ErroResponse> resposta = construir(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), request);
+        return ResponseEntity.status(resposta.getStatusCode())
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(segundos))
+                .body(resposta.getBody());
     }
 
     @ExceptionHandler(ResponseStatusException.class)

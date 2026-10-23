@@ -1,0 +1,17 @@
+# Copie para terraform.tfvars (fica fora do git) e preencha.
+
+google_books_api_key = "..."
+
+# Alerta quando o gasto bruto passar de 80% do orçamento ou a previsão estourar.
+email_alertas = "voce@exemplo.com"
+# orcamento_mensal_usd = 30
+
+# Depois de criar o registro A apontando para o ip_publico da saída:
+# api_dominio = "api.booklit.bio"
+
+# admin_emails = "voce@exemplo.com"
+# front_url    = "https://booklit.bio"
+# cors_origens = "https://booklit.bio"
+
+# Já existe provedor OIDC do GitHub na conta? Então:
+# criar_oidc_github = false

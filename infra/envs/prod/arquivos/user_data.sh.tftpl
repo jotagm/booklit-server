@@ -1,0 +1,32 @@
+#!/bin/bash
+# Preparação da EC2 na primeira inicialização (cloud-init). Log em /var/log/cloud-init-output.log.
+# A aplicação NÃO sobe aqui: quem sobe é o primeiro deploy do pipeline (/opt/booklit/deploy.sh).
+set -euxo pipefail
+
+# Swap de 1 GB: rede de segurança para picos de memória numa máquina de 1 GB.
+if [ ! -f /swapfile ]; then
+  dd if=/dev/zero of=/swapfile bs=1M count=1024
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  echo '/swapfile swap swap defaults 0 0' >> /etc/fstab
+fi
+
+dnf install -y docker
+systemctl enable --now docker
+
+# Plugin docker compose (o AL2023 não traz no repositório).
+COMPOSE_VERSAO=v2.29.7
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -fsSL "https://github.com/docker/compose/releases/download/$COMPOSE_VERSAO/docker-compose-linux-$(uname -m)" \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+docker compose version
+
+install -d -m 700 /opt/booklit
+echo '${compose_b64}' | base64 -d > /opt/booklit/compose.yaml
+echo '${caddyfile_b64}' | base64 -d > /opt/booklit/Caddyfile
+echo '${deploy_b64}' | base64 -d > /opt/booklit/deploy.sh
+chmod 700 /opt/booklit/deploy.sh
+
+echo "EC2 pronta para o primeiro deploy (região ${regiao}, configuração em ${prefixo_ssm}, logs em ${log_group})"
