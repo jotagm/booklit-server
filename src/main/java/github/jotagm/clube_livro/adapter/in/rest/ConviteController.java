@@ -51,17 +51,18 @@ public class ConviteController {
     @ApiResponse(responseCode = "201", description = "Convite criado")
     @ApiResponse(responseCode = "403", description = "O usuário autenticado não é líder do clube")
     @ApiResponse(responseCode = "404", description = "Clube não encontrado")
+    @ApiResponse(responseCode = "409", description = "Já é membro, ou já existe convite pendente para o e-mail")
+    @ApiResponse(responseCode = "422", description = "Expiração no passado ou além de 30 dias")
     @PostMapping
     @RequireLider("#request.clubeId()")
     public ResponseEntity<ConviteResponse> criar(@RequestBody @Valid ConviteRequest request) {
-        Convite convite = Convite.novo(
+        Convite convite = conviteService.criar(
                 clubeService.buscarPorId(request.clubeId()),
                 autorizacaoClube.usuarioAutenticado(),
-                request.emailDestinatario().trim().toLowerCase(),
+                request.emailDestinatario(),
                 request.expiraEm());
 
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ConviteResponse.from(conviteService.salvar(convite)));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ConviteResponse.from(convite));
     }
 
     @Operation(summary = "Lista os convites pendentes do usuário autenticado", description = "Convites por e-mail ainda válidos endereçados ao e-mail da conta.")
@@ -148,6 +149,7 @@ public class ConviteController {
     @ApiResponse(responseCode = "200", description = "Convite aceito")
     @ApiResponse(responseCode = "403", description = "O convite não pertence ao usuário autenticado ou já expirou")
     @ApiResponse(responseCode = "404", description = "Convite não encontrado")
+    @ApiResponse(responseCode = "409", description = "Convite já respondido")
     @PutMapping("/{id}/aceitar")
     public ResponseEntity<ConviteResponse> atualizarConviteAceito(@PathVariable UUID id) {
         Convite convite = conviteService.aceitarConvite(id, autorizacaoClube.usuarioAutenticado().getEmail());
@@ -158,6 +160,7 @@ public class ConviteController {
     @ApiResponse(responseCode = "200", description = "Convite recusado")
     @ApiResponse(responseCode = "403", description = "O convite não pertence ao usuário autenticado")
     @ApiResponse(responseCode = "404", description = "Convite não encontrado")
+    @ApiResponse(responseCode = "409", description = "Convite já respondido")
     @PutMapping("/{id}/recusado")
     public ResponseEntity<ConviteResponse> atualizarConviteRecusado(@PathVariable UUID id) {
         Convite convite = conviteService.rejeitarConvite(id, autorizacaoClube.usuarioAutenticado().getEmail());

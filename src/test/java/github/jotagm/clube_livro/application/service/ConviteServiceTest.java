@@ -7,6 +7,8 @@ import github.jotagm.clube_livro.domain.clube.UsuarioClube;
 import github.jotagm.clube_livro.domain.clube.convite.Convite;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import github.jotagm.clube_livro.domain.clube.convite.ConviteStatus;
+import github.jotagm.clube_livro.domain.exceptions.ConflitoException;
+import github.jotagm.clube_livro.domain.exceptions.RegraDeNegocioException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -40,6 +42,9 @@ class ConviteServiceTest {
 
     @Mock
     private LeituraClubeService leituraClubeService;
+
+    @Mock
+    private UsuarioService usuarioService;
 
     @InjectMocks
     private ConviteService conviteService;
@@ -194,5 +199,137 @@ class ConviteServiceTest {
     void pertenceA_deveIgnorarMaiusculas() {
         Convite convite = conviteExemplo(UUID.randomUUID());
         assertThat(convite.pertenceA("Convidado@Email.com")).isTrue();
+    }
+
+    // ---- respostas: um convite só é respondido uma vez ----
+
+    private Convite conviteDoClube(Clube clube, ConviteStatus status) {
+        return new Convite(UUID.randomUUID(), clube, null, "convidado@email.com", status,
+                LocalDateTime.now().plusDays(7), LocalDateTime.now());
+    }
+
+    @Test
+    void aceitar_deveAdicionarComoMembro() {
+        Clube clube = Clube.builder().id(UUID.randomUUID()).nome("Clube").build();
+        Usuario usuario = Usuario.builder().id(7).email("convidado@email.com").build();
+        Convite convite = conviteDoClube(clube, ConviteStatus.PENDENTE);
+        when(conviteRepository.findById(convite.getId())).thenReturn(Optional.of(convite));
+        when(usuarioService.buscarPorEmail("convidado@email.com")).thenReturn(usuario);
+        when(usuarioClubeService.listarPorClube(clube.getId())).thenReturn(List.of());
+        when(conviteRepository.save(convite)).thenReturn(convite);
+
+        Convite resultado = conviteService.aceitarConvite(convite.getId(), "convidado@email.com");
+
+        assertThat(resultado.getStatus()).isEqualTo(ConviteStatus.ACEITO);
+        verify(usuarioClubeService).adicionar(usuario, clube, ClubePapel.MEMBRO);
+    }
+
+    @Test
+    void aceitar_quemJaEntrouPeloLinkNaoGanhaSegundaLinhaDeMembro() {
+        Clube clube = Clube.builder().id(UUID.randomUUID()).nome("Clube").build();
+        Usuario usuario = Usuario.builder().id(7).email("convidado@email.com").build();
+        Convite convite = conviteDoClube(clube, ConviteStatus.PENDENTE);
+        when(conviteRepository.findById(convite.getId())).thenReturn(Optional.of(convite));
+        when(usuarioService.buscarPorEmail("convidado@email.com")).thenReturn(usuario);
+        when(usuarioClubeService.listarPorClube(clube.getId()))
+                .thenReturn(List.of(UsuarioClube.novo(usuario, clube, ClubePapel.MEMBRO)));
+        when(conviteRepository.save(convite)).thenReturn(convite);
+
+        Convite resultado = conviteService.aceitarConvite(convite.getId(), "convidado@email.com");
+
+        assertThat(resultado.getStatus()).isEqualTo(ConviteStatus.ACEITO);
+        verify(usuarioClubeService, never()).adicionar(any(), any(), any());
+    }
+
+    @Test
+    void aceitar_conviteJaAceitoDaConflitoENaoMexeNosMembros() {
+        Clube clube = Clube.builder().id(UUID.randomUUID()).nome("Clube").build();
+        Convite convite = conviteDoClube(clube, ConviteStatus.ACEITO);
+        when(conviteRepository.findById(convite.getId())).thenReturn(Optional.of(convite));
+
+        assertThatThrownBy(() -> conviteService.aceitarConvite(convite.getId(), "convidado@email.com"))
+                .isInstanceOf(ConflitoException.class)
+                .hasMessage("Este convite já foi aceito");
+        verify(usuarioClubeService, never()).adicionar(any(), any(), any());
+        verify(conviteRepository, never()).save(any());
+    }
+
+    @Test
+    void aceitar_conviteRecusadoDaConflito() {
+        Convite convite = conviteDoClube(Clube.builder().id(UUID.randomUUID()).build(), ConviteStatus.RECUSADO);
+        when(conviteRepository.findById(convite.getId())).thenReturn(Optional.of(convite));
+
+        assertThatThrownBy(() -> conviteService.aceitarConvite(convite.getId(), "convidado@email.com"))
+                .isInstanceOf(ConflitoException.class);
+    }
+
+    @Test
+    void recusar_conviteJaAceitoDaConflitoEMantemAceito() {
+        Convite convite = conviteDoClube(Clube.builder().id(UUID.randomUUID()).build(), ConviteStatus.ACEITO);
+        when(conviteRepository.findById(convite.getId())).thenReturn(Optional.of(convite));
+
+        assertThatThrownBy(() -> conviteService.rejeitarConvite(convite.getId(), "convidado@email.com"))
+                .isInstanceOf(ConflitoException.class);
+        assertThat(convite.getStatus()).isEqualTo(ConviteStatus.ACEITO);
+    }
+
+    // ---- criação ----
+
+    @Test
+    void criar_deveNormalizarEmailESalvarPendente() {
+        Clube clube = Clube.builder().id(UUID.randomUUID()).nome("Clube").build();
+        when(usuarioClubeService.listarPorClube(clube.getId())).thenReturn(List.of());
+        when(conviteRepository.existsByClubeIdAndEmailDestinatarioIgnoreCaseAndStatusAndExpiraEmAfter(
+                eq(clube.getId()), eq("novo@email.com"), eq(ConviteStatus.PENDENTE), any(LocalDateTime.class)))
+                .thenReturn(false);
+        when(conviteRepository.save(any(Convite.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Convite convite = conviteService.criar(clube, null, "  Novo@Email.com ", LocalDateTime.now().plusDays(7));
+
+        assertThat(convite.getEmailDestinatario()).isEqualTo("novo@email.com");
+        assertThat(convite.getStatus()).isEqualTo(ConviteStatus.PENDENTE);
+    }
+
+    @Test
+    void criar_expiracaoNoPassadoDaRegraDeNegocio() {
+        Clube clube = Clube.builder().id(UUID.randomUUID()).build();
+
+        assertThatThrownBy(() -> conviteService.criar(clube, null, "a@email.com", LocalDateTime.now().minusMinutes(1)))
+                .isInstanceOf(RegraDeNegocioException.class);
+        verify(conviteRepository, never()).save(any());
+    }
+
+    @Test
+    void criar_expiracaoAlemDeTrintaDiasDaRegraDeNegocio() {
+        Clube clube = Clube.builder().id(UUID.randomUUID()).build();
+
+        assertThatThrownBy(() -> conviteService.criar(clube, null, "a@email.com", LocalDateTime.now().plusDays(31)))
+                .isInstanceOf(RegraDeNegocioException.class)
+                .hasMessage("O convite pode valer no máximo 30 dias");
+    }
+
+    @Test
+    void criar_paraQuemJaEMembroDaConflito() {
+        Clube clube = Clube.builder().id(UUID.randomUUID()).build();
+        Usuario membro = Usuario.builder().id(3).email("membro@email.com").build();
+        when(usuarioClubeService.listarPorClube(clube.getId()))
+                .thenReturn(List.of(UsuarioClube.novo(membro, clube, ClubePapel.MEMBRO)));
+
+        assertThatThrownBy(() -> conviteService.criar(clube, null, "MEMBRO@email.com", LocalDateTime.now().plusDays(7)))
+                .isInstanceOf(ConflitoException.class)
+                .hasMessage("Essa pessoa já é membro do clube");
+    }
+
+    @Test
+    void criar_segundoConvitePendenteParaOMesmoEmailDaConflito() {
+        Clube clube = Clube.builder().id(UUID.randomUUID()).build();
+        when(usuarioClubeService.listarPorClube(clube.getId())).thenReturn(List.of());
+        when(conviteRepository.existsByClubeIdAndEmailDestinatarioIgnoreCaseAndStatusAndExpiraEmAfter(
+                eq(clube.getId()), eq("a@email.com"), eq(ConviteStatus.PENDENTE), any(LocalDateTime.class)))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> conviteService.criar(clube, null, "a@email.com", LocalDateTime.now().plusDays(7)))
+                .isInstanceOf(ConflitoException.class);
+        verify(conviteRepository, never()).save(any());
     }
 }

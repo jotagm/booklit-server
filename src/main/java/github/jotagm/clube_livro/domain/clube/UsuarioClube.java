@@ -8,7 +8,10 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "t_usuario_clube")
+// A unicidade é a garantia real: dois aceites simultâneos passariam os dois por uma
+// checagem "já é membro?" feita antes do insert.
+@Table(name = "t_usuario_clube", uniqueConstraints = @UniqueConstraint(
+        name = "uk_usuario_clube", columnNames = {"usuario_id", "clube_id"}))
 @Getter
 @Builder
 @NoArgsConstructor
