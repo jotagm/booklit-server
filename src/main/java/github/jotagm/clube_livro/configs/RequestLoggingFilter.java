@@ -10,12 +10,16 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.HandlerMapping;
 
 import java.io.IOException;
 import java.util.UUID;
 
 /**
- * Registra uma linha por requisição com método, rota, status e duração.
+ * Registra uma linha por requisição com método, rota, status, duração, usuário e o handler
+ * que atendeu ({@code ClubeController#buscarPorId}), no formato que a ferramenta
+ * {@code tools/blogs} lê para filtrar por controller.
  *
  * <p>Coloca também um {@code requestId} no MDC, então todo log emitido durante a requisição
  * carrega o mesmo identificador — é o que permite juntar as linhas de uma chamada específica
@@ -46,19 +50,34 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
             // O usuário só existe depois que o JwtFilter rodou, por isso é lido aqui no finally.
             String usuario = usuarioAutenticado();
+            String handler = handler(request);
 
             if (status >= 500) {
-                log.error("{} {}{} -> {} ({}ms) usuario={}", request.getMethod(), rota,
-                        query != null ? "?" + query : "", status, duracao, usuario);
+                log.error("{} {}{} -> {} ({}ms) usuario={} handler={}", request.getMethod(), rota,
+                        query != null ? "?" + query : "", status, duracao, usuario, handler);
             } else if (status >= 400) {
-                log.warn("{} {}{} -> {} ({}ms) usuario={}", request.getMethod(), rota,
-                        query != null ? "?" + query : "", status, duracao, usuario);
+                log.warn("{} {}{} -> {} ({}ms) usuario={} handler={}", request.getMethod(), rota,
+                        query != null ? "?" + query : "", status, duracao, usuario, handler);
             } else {
-                log.info("{} {} -> {} ({}ms) usuario={}", request.getMethod(), rota, status, duracao, usuario);
+                log.info("{} {} -> {} ({}ms) usuario={} handler={}", request.getMethod(), rota, status, duracao,
+                        usuario, handler);
             }
 
             MDC.remove(REQUEST_ID);
         }
+    }
+
+    /**
+     * Quem atendeu a requisição. O Spring guarda o handler escolhido num atributo do request,
+     * que continua lá depois do filterChain. Sem handler (401 do Spring Security, 404 de rota
+     * inexistente) fica "-".
+     */
+    private String handler(HttpServletRequest request) {
+        Object handler = request.getAttribute(HandlerMapping.BEST_MATCHING_HANDLER_ATTRIBUTE);
+        if (handler instanceof HandlerMethod metodo) {
+            return metodo.getBeanType().getSimpleName() + "#" + metodo.getMethod().getName();
+        }
+        return "-";
     }
 
     private String usuarioAutenticado() {

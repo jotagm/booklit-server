@@ -1,0 +1,116 @@
+{
+ "events": [
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800551396,
+   "message": "21:10:01.100  INFO [________] g.j.clube_livro.ClubeLivroApplication   Started ClubeLivroApplication in 41.2 seconds",
+   "eventId": "ev000",
+   "ingestionTime": 1792800551446
+  },
+  {
+   "logStreamName": "caddy",
+   "timestamp": 1792800552096,
+   "message": "{\"level\":\"info\",\"ts\":1792800000.1,\"msg\":\"serving initial configuration\"}",
+   "eventId": "ev001",
+   "ingestionTime": 1792800552146
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800552796,
+   "message": "21:10:05.200  INFO [a1b2c3d4] g.j.c.configs.RequestLoggingFilter      GET /clubes -> 200 (35ms) usuario=jota@booklit.bio handler=ClubeController#listar",
+   "eventId": "ev002",
+   "ingestionTime": 1792800552846
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800553496,
+   "message": "21:10:06.000  WARN [bf167f53] g.j.c.a.in.rest.GlobalExceptionHandler   401 em POST /auth/otp/email/verificacao: Código expirado ou já utilizado. Peça um novo código.",
+   "eventId": "ev003",
+   "ingestionTime": 1792800553546
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800554196,
+   "message": "21:10:06.010  WARN [bf167f53] g.j.c.configs.RequestLoggingFilter      POST /auth/otp/email/verificacao -> 401 (12ms) usuario=anonimo handler=OtpController#verificar",
+   "eventId": "ev004",
+   "ingestionTime": 1792800554246
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800554896,
+   "message": "21:10:07.000  INFO [cc11dd22] g.j.c.a.s.ConviteService                Convite criado id=8f1e clube=3a2b",
+   "eventId": "ev005",
+   "ingestionTime": 1792800554946
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800555596,
+   "message": "21:10:07.020  INFO [cc11dd22] g.j.c.configs.RequestLoggingFilter      POST /convites -> 201 (48ms) usuario=jota@booklit.bio",
+   "eventId": "ev006",
+   "ingestionTime": 1792800555646
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800556296,
+   "message": "21:10:08.000  WARN [ee33ff44] g.j.c.a.in.rest.GlobalExceptionHandler   409 em PUT /convites/8f1e/aceitar: Este convite já foi aceito",
+   "eventId": "ev007",
+   "ingestionTime": 1792800556346
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800556996,
+   "message": "21:10:08.005  WARN [ee33ff44] g.j.c.configs.RequestLoggingFilter      PUT /convites/8f1e/aceitar -> 409 (9ms) usuario=maria@ex.com handler=ConviteController#atualizarConviteAceito",
+   "eventId": "ev008",
+   "ingestionTime": 1792800557046
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800557696,
+   "message": "21:10:09.000 ERROR [99aa88bb] g.j.c.a.out.client.GoogleBooksClient     Falha ao consultar a API do Google Books para o título 'Duna'",
+   "eventId": "ev009",
+   "ingestionTime": 1792800557746
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800558396,
+   "message": "org.springframework.web.client.HttpServerErrorException$InternalServerError: 500 Internal Server Error: [no body]",
+   "eventId": "ev010",
+   "ingestionTime": 1792800558446
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800559096,
+   "message": "\tat org.springframework.web.client.HttpServerErrorException.create(HttpServerErrorException.java:102)",
+   "eventId": "ev011",
+   "ingestionTime": 1792800559146
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800559796,
+   "message": "\tat github.jotagm.clube_livro.adapter.out.client.GoogleBooksClient.buscar(GoogleBooksClient.java:55)",
+   "eventId": "ev012",
+   "ingestionTime": 1792800559846
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800560496,
+   "message": "21:10:09.050 ERROR [99aa88bb] g.j.c.configs.RequestLoggingFilter      GET /leituras/livros/buscar?q=Duna -> 502 (812ms) usuario=jota@booklit.bio handler=LeituraClubeController#buscarLivros",
+   "eventId": "ev013",
+   "ingestionTime": 1792800560546
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800561196,
+   "message": "21:10:10.000  INFO [________] g.j.c.a.out.outbox.OutboxRelay           Evento publicado id=1 tipo=VotacaoEncerrada",
+   "eventId": "ev014",
+   "ingestionTime": 1792800561246
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800561896,
+   "message": "21:10:11.000  INFO [12345678] g.j.c.configs.RequestLoggingFilter      GET /clubes/3f2a9c1e-1111-2222-3333-444455556666 -> 200 (22ms) usuario=jota@booklit.bio",
+   "eventId": "ev015",
+   "ingestionTime": 1792800561946
+  }
+ ]
+}
