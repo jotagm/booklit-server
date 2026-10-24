@@ -12,6 +12,7 @@ email_alertas = "voce@exemplo.com"
 # admin_emails = "voce@exemplo.com"
 # front_url    = "https://booklit.bio"
 # cors_origens = "https://booklit.bio"
+# jwt_expiracao_ms = "86400000"   # 24h; o mesmo do JWT_EXPIRATION do Railway
 
 # Já existe provedor OIDC do GitHub na conta? Então:
 # criar_oidc_github = false

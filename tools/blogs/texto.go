@@ -1,73 +1,80 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 )
 
-// RodaTexto imprime as linhas filtradas: serve para pipe (grep, less) e para scripts.
-func RodaTexto(fonte *Fonte, f Filtro, janela time.Duration, seguir bool) error {
-	cor := terminalInterativo()
-	m := NovoMontador()
-	desde := time.Now().Add(-janela)
-	impressos := map[*Registro]int{} // continuações já impressas por registro
+// modoTexto imprime no stdout, sem interface (para | grep, | less -R, ou sem terminal).
+// Um registro só sai quando já chegou o seguinte do mesmo stream, para o stack trace dele
+// estar completo.
+func modoTexto(fonte Fonte, e Escopo, modo Modo, janela, intervalo time.Duration, seguir bool) error {
+	comCor := stdoutEhTerminal()
+	m := NovoMontador(0)
+	impressos := 0
+	imprime := func(ate int) {
+		for ; impressos < ate; impressos++ {
+			r := m.Registros[impressos]
+			if !e.Filtra(r) || !Mostra(r, modo) {
+				continue
+			}
+			for _, l := range Formata(r, modo, true) {
+				fmt.Println(Desenha(l, "", comCor))
+			}
+		}
+	}
 
+	ctx := context.Background()
+	cursor := time.Now().Add(-janela)
+	if fonte.Arquivo != "" {
+		cursor = time.Time{}
+	}
 	for {
-		ev, trunc, err := fonte.Busca(desde)
+		eventos, cheio, err := fonte.Busca(ctx, cursor)
 		if err != nil {
-			return err
+			if !seguir {
+				return err
+			}
+			fmt.Fprintln(os.Stderr, "blogs:", err)
 		}
-		if trunc {
-			fmt.Fprintln(os.Stderr, "blogs: limite de eventos atingido; use -desde menor ou -limite maior")
-		}
-		m.Adiciona(ev)
-		for _, e := range ev {
-			if t := time.UnixMilli(e.Timestamp).Add(-20 * time.Second); t.After(desde) {
-				desde = t
+		m.Adiciona(eventos)
+		for _, e := range eventos {
+			if c := time.UnixMilli(e.Timestamp).Add(-15 * time.Second); c.After(cursor) {
+				cursor = c
 			}
 		}
-		for _, r := range Filtra(m.Registros, &f) {
-			ja, visto := impressos[r]
-			if !visto {
-				fmt.Println(formataTexto(r, cor))
-			}
-			for _, c := range r.Continua[ja:] {
-				fmt.Println("    " + c)
-			}
-			impressos[r] = len(r.Continua)
-		}
-		if !seguir {
+		if !seguir && !cheio {
+			imprime(len(m.Registros))
 			return nil
 		}
-		time.Sleep(2 * time.Second)
+		imprime(ultimoFechado(m))
+		if !cheio {
+			time.Sleep(intervalo)
+		}
 	}
 }
 
-func formataTexto(r *Registro, cor bool) string {
-	ctrl := strings.TrimSuffix(r.Controller, "Controller")
-	if ctrl == "" {
-		ctrl = "-"
+// Índice até onde os registros estão fechados: o último de cada stream que acabou de chegar
+// ainda pode receber linhas de stack trace na próxima busca.
+func ultimoFechado(m *Montador) int {
+	fim := len(m.Registros)
+	for _, r := range m.ultimo {
+		if r.rodada != m.rodada {
+			continue
+		}
+		for i := fim - 1; i >= 0; i-- {
+			if m.Registros[i] == r {
+				fim = i
+				break
+			}
+		}
 	}
-	req := r.RequestID
-	if req == "" {
-		req = "-"
-	}
-	msg := r.Mensagem
-	if !cor {
-		return fmt.Sprintf("%s %-5s %-8s %-14s %s", r.Momento.Format("2006-01-02 15:04:05.000"), r.Nivel, req, ctrl, msg)
-	}
-	corMsg := ""
-	if r.Acesso != nil {
-		corMsg = corDoStatus(r.Acesso.Status)
-	} else if r.Nivel == Error {
-		corMsg = vermelho
-	}
-	return fmt.Sprintf("%s%s%s %s%-5s%s %s%-8s%s %s%-14s%s %s%s%s",
-		cinza, r.Momento.Format("2006-01-02 15:04:05"), reset,
-		corDoNivel(r.Nivel), r.Nivel, reset,
-		apagado, req, reset,
-		azul, ctrl, reset,
-		corMsg, msg, reset)
+	return fim
+}
+
+func stdoutEhTerminal() bool {
+	info, err := os.Stdout.Stat()
+	return err == nil && info.Mode()&os.ModeCharDevice != 0
 }

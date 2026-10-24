@@ -46,6 +46,12 @@ variable "cors_origens" {
   default     = "https://booklit.bio"
 }
 
+variable "jwt_expiracao_ms" {
+  description = "Validade do token JWT em milissegundos (vazio = padrão do application.yaml, 24h)"
+  type        = string
+  default     = ""
+}
+
 variable "admin_emails" {
   description = "E-mails de administradores do Booklit, separados por vírgula"
   type        = string

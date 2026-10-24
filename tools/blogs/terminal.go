@@ -17,6 +17,7 @@ type Terminal struct {
 	estado  string
 	Largura int
 	Altura  int
+	fechado bool
 }
 
 func AbreTerminal() (*Terminal, error) {
@@ -52,6 +53,10 @@ func (t *Terminal) stty(args ...string) (string, error) {
 }
 
 func (t *Terminal) Fecha() {
+	if t.fechado {
+		return
+	}
+	t.fechado = true
 	t.Escreve("\x1b[?25h\x1b[?1049l")
 	if t.estado != "" {
 		t.stty(t.estado)
@@ -179,66 +184,6 @@ func (t *Terminal) LeTeclas(saida chan<- Tecla) {
 		}
 	}
 	close(saida)
-}
-
-// --- desenho ---------------------------------------------------------------------------
-
-const (
-	reset     = "\x1b[0m"
-	negrito   = "\x1b[1m"
-	apagado   = "\x1b[2m"
-	invertido = "\x1b[7m"
-	vermelho  = "\x1b[31m"
-	verde     = "\x1b[32m"
-	amarelo   = "\x1b[33m"
-	azul      = "\x1b[34m"
-	magenta   = "\x1b[35m"
-	ciano     = "\x1b[36m"
-	cinza     = "\x1b[90m"
-)
-
-// corta limita s a n colunas (contando runas; a TUI não usa caracteres largos).
-func corta(s string, n int) string {
-	if n <= 0 {
-		return ""
-	}
-	if utf8.RuneCountInString(s) <= n {
-		return s
-	}
-	r := []rune(s)
-	if n == 1 {
-		return string(r[:1])
-	}
-	return string(r[:n-1]) + "…"
-}
-
-func preenche(s string, n int) string {
-	c := utf8.RuneCountInString(s)
-	if c >= n {
-		return corta(s, n)
-	}
-	return s + strings.Repeat(" ", n-c)
-}
-
-// quebra divide s em linhas de até n colunas, preservando as quebras originais.
-func quebra(s string, n int) []string {
-	if n < 10 {
-		n = 10
-	}
-	var out []string
-	for _, linha := range strings.Split(strings.ReplaceAll(s, "\t", "    "), "\n") {
-		r := []rune(linha)
-		if len(r) == 0 {
-			out = append(out, "")
-			continue
-		}
-		for len(r) > n {
-			out = append(out, string(r[:n]))
-			r = r[n:]
-		}
-		out = append(out, string(r))
-	}
-	return out
 }
 
 func itoa(i int) string { return strconv.Itoa(i) }
