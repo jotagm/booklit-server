@@ -6,8 +6,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.method.HandlerMethod;
@@ -27,10 +27,15 @@ import java.util.UUID;
  */
 @Slf4j
 @Component
-@Order(1)
+// Antes de tudo, inclusive do Spring Security (-100): com @Order(1) um 401 do Security
+// encerrava a requisição antes deste filtro e o acesso nunca aparecia no log.
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class RequestLoggingFilter extends OncePerRequestFilter {
 
     public static final String REQUEST_ID = "requestId";
+
+    /** Preenchido pelo JwtFilter: quando o finally roda, o SecurityContext já foi limpo. */
+    public static final String ATRIBUTO_USUARIO = RequestLoggingFilter.class.getName() + ".usuario";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -48,8 +53,8 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             String rota = request.getRequestURI();
             String query = request.getQueryString();
 
-            // O usuário só existe depois que o JwtFilter rodou, por isso é lido aqui no finally.
-            String usuario = usuarioAutenticado();
+            Object autenticado = request.getAttribute(ATRIBUTO_USUARIO);
+            String usuario = autenticado != null ? autenticado.toString() : "anonimo";
             String handler = handler(request);
 
             if (status >= 500) {
@@ -78,14 +83,6 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             return metodo.getBeanType().getSimpleName() + "#" + metodo.getMethod().getName();
         }
         return "-";
-    }
-
-    private String usuarioAutenticado() {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
-            return "anonimo";
-        }
-        return auth.getName();
     }
 
     /** Documentação e health check poluiriam o log sem contar nada de útil. */
