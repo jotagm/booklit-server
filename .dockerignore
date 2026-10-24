@@ -10,3 +10,4 @@ auth-core/target/
 infra/
 *.log
 docker-compose.yaml
+tools/
