@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -29,7 +30,7 @@ type respostaFiltro struct {
 }
 
 // Busca eventos a partir de "desde" (inclusive). Devolve também se bateu no limite.
-func (f *Fonte) Busca(desde time.Time) ([]Evento, bool, error) {
+func (f *Fonte) Busca(ctx context.Context, desde time.Time) ([]Evento, bool, error) {
 	if f.Arquivo != "" {
 		return f.doArquivo(desde)
 	}
@@ -49,12 +50,15 @@ func (f *Fonte) Busca(desde time.Time) ([]Evento, bool, error) {
 	if f.Perfil != "" {
 		args = append(args, "--profile", f.Perfil)
 	}
-	cmd := exec.Command("aws", args...)
+	cmd := exec.CommandContext(ctx, "aws", args...)
 	// O Floci deixa AWS_ENDPOINT_URL no ambiente; aqui o alvo é sempre a AWS de verdade.
 	cmd.Env = semVariavel(os.Environ(), "AWS_ENDPOINT_URL")
 	var saida, erro bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &saida, &erro
 	if err := cmd.Run(); err != nil {
+		if ctx.Err() != nil {
+			return nil, false, ctx.Err()
+		}
 		var ee *exec.Error
 		if errors.As(err, &ee) {
 			return nil, false, fmt.Errorf("AWS CLI não encontrado no PATH (instale o aws v2)")

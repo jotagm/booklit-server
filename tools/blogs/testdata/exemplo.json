@@ -111,6 +111,97 @@
    "message": "21:10:11.000  INFO [12345678] g.j.c.configs.RequestLoggingFilter      GET /clubes/3f2a9c1e-1111-2222-3333-444455556666 -> 200 (22ms) usuario=jota@booklit.bio",
    "eventId": "ev015",
    "ingestionTime": 1792800561946
+  },
+  {
+   "logStreamName": "caddy",
+   "timestamp": 1792800562596,
+   "message": "{\"level\":\"info\",\"ts\":1792800560.5,\"logger\":\"http.log.access.log0\",\"msg\":\"handled request\",\"request\":{\"remote_ip\":\"177.10.20.30\",\"method\":\"GET\",\"uri\":\"/clubes\",\"headers\":{}},\"duration\":0.0412,\"status\":200}",
+   "eventId": "ev100",
+   "ingestionTime": 1792800562646
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800563296,
+   "message": "21:10:12.000 ERROR [77aa66bb] g.j.c.a.in.rest.GlobalExceptionHandler   Erro inesperado em POST /votos",
+   "eventId": "ev101",
+   "ingestionTime": 1792800563346
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800563996,
+   "message": "org.springframework.dao.DataIntegrityViolationException: could not execute statement",
+   "eventId": "ev102",
+   "ingestionTime": 1792800564046
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800564696,
+   "message": "\tat org.springframework.orm.jpa.vendor.HibernateJpaDialect.convertHibernateAccessException(HibernateJpaDialect.java:290)",
+   "eventId": "ev103",
+   "ingestionTime": 1792800564746
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800565396,
+   "message": "\tat github.jotagm.clube_livro.application.service.VotoService.votar(VotoService.java:48)",
+   "eventId": "ev104",
+   "ingestionTime": 1792800565446
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800566096,
+   "message": "\tat github.jotagm.clube_livro.adapter.in.rest.VotoController.votar(VotoController.java:31)",
+   "eventId": "ev105",
+   "ingestionTime": 1792800566146
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800566796,
+   "message": "Caused by: org.hibernate.exception.ConstraintViolationException: could not execute statement",
+   "eventId": "ev106",
+   "ingestionTime": 1792800566846
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800567496,
+   "message": "\tat org.hibernate.exception.internal.SQLStateConversionDelegate.convert(SQLStateConversionDelegate.java:97)",
+   "eventId": "ev107",
+   "ingestionTime": 1792800567546
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800568196,
+   "message": "Caused by: org.postgresql.util.PSQLException: ERROR: duplicate key value violates unique constraint \"uk_voto\"",
+   "eventId": "ev108",
+   "ingestionTime": 1792800568246
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800568896,
+   "message": "\tat org.postgresql.core.v3.QueryExecutorImpl.receiveErrorResponse(QueryExecutorImpl.java:2725)",
+   "eventId": "ev109",
+   "ingestionTime": 1792800568946
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800569596,
+   "message": "\t... 120 more",
+   "eventId": "ev110",
+   "ingestionTime": 1792800569646
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800570296,
+   "message": "21:10:12.030 ERROR [77aa66bb] g.j.c.configs.RequestLoggingFilter      POST /votos -> 500 (31ms) usuario=jota@booklit.bio handler=VotoController#votar",
+   "eventId": "ev111",
+   "ingestionTime": 1792800570346
+  },
+  {
+   "logStreamName": "api",
+   "timestamp": 1792800570996,
+   "message": "21:10:13.000  INFO [________] g.j.c.a.out.email.SesEnviadorDeOtp       Resposta do SES {\"MessageId\":\"0100018f-abc\",\"ResponseMetadata\":{\"HTTPStatusCode\":200}}",
+   "eventId": "ev112",
+   "ingestionTime": 1792800571046
   }
  ]
 }

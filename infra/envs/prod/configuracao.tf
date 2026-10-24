@@ -27,7 +27,8 @@ locals {
     var.api_dominio == "" ? {} : { API_DOMINIO = var.api_dominio },
     var.front_url == "" ? {} : { FRONT_URL = var.front_url },
     var.cors_origens == "" ? {} : { CORS_ALLOWED_ORIGINS = var.cors_origens },
-    var.admin_emails == "" ? {} : { BOOKLIT_ADMIN_EMAILS = var.admin_emails }
+    var.admin_emails == "" ? {} : { BOOKLIT_ADMIN_EMAILS = var.admin_emails },
+    var.jwt_expiracao_ms == "" ? {} : { JWT_EXPIRATION = var.jwt_expiracao_ms }
   )
 
   segredos = {

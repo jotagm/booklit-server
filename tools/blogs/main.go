@@ -4,103 +4,90 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 )
 
-const versao = "0.1.0"
+const versao = "0.2.0"
 
 func main() {
 	var (
 		grupo      = flag.String("grupo", "/booklit/prod", "log group do CloudWatch")
 		perfil     = flag.String("perfil", padrao(os.Getenv("BLOGS_PERFIL"), "booklit"), "profile do AWS CLI (env BLOGS_PERFIL)")
 		regiao     = flag.String("regiao", padrao(os.Getenv("BLOGS_REGIAO"), "us-east-1"), "região da AWS")
-		stream     = flag.String("stream", "", "api, caddy ou vazio para os dois")
-		desde      = flag.Duration("desde", time.Hour, "janela: 15m, 1h, 6h, 24h, 72h")
-		nivel      = flag.String("nivel", "", "nível mínimo: INFO, WARN, ERROR")
-		controller = flag.String("controller", "", "filtra por controller (ex.: ClubeController ou Clube)")
-		busca      = flag.String("busca", "", "texto a buscar; \"re:\" no começo usa regex")
-		req        = flag.String("req", "", "requestId: só as linhas dessa requisição")
-		status     = flag.Int("status", 0, "só requisições com status >= N (ex.: 400, 500)")
-		acessos    = flag.Bool("acessos", false, "só as linhas de requisição")
-		seguir     = flag.Bool("seguir", true, "ao vivo: atualiza sozinho (-seguir=false abre pausado; em -texto só segue se pedir)")
-		texto      = flag.Bool("texto", false, "imprime no terminal em vez de abrir a interface")
+		controller = flag.String("controller", "", "controller (ou pedaço do nome: convite), api, sem ou caddy; pula o menu")
+		modo       = flag.String("modo", "", "todos, info ou erros (pula o menu)")
+		desde      = flag.Duration("desde", 15*time.Minute, "quanto do passado carregar ao abrir: 15m, 1h, 6h...")
+		intervalo  = flag.Duration("intervalo", 2*time.Second, "intervalo entre buscas de linhas novas")
+		texto      = flag.Bool("texto", false, "imprime no terminal em vez de abrir a interface (bom para | grep)")
+		seguir     = flag.Bool("seguir", true, "no -texto, continua acompanhando (-seguir=false imprime e sai)")
 		arquivo    = flag.String("arquivo", "", "lê eventos de um JSON salvo do filter-log-events (offline)")
-		limite     = flag.Int("limite", 20000, "máximo de eventos por busca")
+		limite     = flag.Int("limite", 10000, "máximo de eventos por busca")
 		mostraVer  = flag.Bool("versao", false, "mostra a versão")
 	)
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "blogs %s — logs do booklit-server no CloudWatch\n\n", versao)
-		fmt.Fprintf(os.Stderr, "uso: blogs [opções]        (sem opções abre a interface; ? mostra os atalhos)\n\n")
+		fmt.Fprintf(os.Stderr, "uso: blogs [opções]     (sem opções: menus de controller e tipo de log)\n\n")
 		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\nexemplos:\n  blogs\n  blogs -desde 6h -nivel ERROR\n  blogs -texto -controller Convite -busca \"já foi aceito\"\n  blogs -texto -seguir -status 500\n")
+		fmt.Fprintf(os.Stderr, "\nexemplos:\n  blogs\n  blogs -controller convite -modo erros\n"+
+			"  blogs -desde 2h\n  blogs -texto -controller voto | less -R\n")
 	}
 	flag.Parse()
 	if *mostraVer {
 		fmt.Println(versao)
 		return
 	}
-
-	fonte := &Fonte{Grupo: *grupo, Perfil: *perfil, Regiao: *regiao, Arquivo: *arquivo, Limite: *limite}
-	if *stream != "" {
-		fonte.Streams = []string{*stream}
+	if *intervalo < time.Second {
+		*intervalo = time.Second
 	}
 
-	f := Filtro{NivelMinimo: SemNivel, Busca: *busca, RequestID: *req, StatusMin: *status, SoAcessos: *acessos}
-	if *nivel != "" {
-		if f.NivelMinimo = parseNivel(*nivel); f.NivelMinimo == SemNivel {
-			falha("nível inválido: %s (use INFO, WARN ou ERROR)", *nivel)
-		}
-	}
+	var e *Escopo
 	if *controller != "" {
-		f.Controller = nomeController(*controller)
+		v, ok := escopoPorNome(*controller)
+		if !ok {
+			falha("controller desconhecida ou ambígua: %s (ex.: Convite, ClubeController, api, sem, caddy)", *controller)
+		}
+		e = &v
+	}
+	var m *Modo
+	if *modo != "" {
+		v, ok := parseModo(*modo)
+		if !ok {
+			falha("modo inválido: %s (use todos, info ou erros)", *modo)
+		}
+		m = &v
 	}
 
-	janela := indiceJanela(*desde)
-	var err error
-	if *texto || !terminalInterativo() {
-		// No modo texto o padrão é imprimir e sair (bom para pipe); só segue com -seguir explícito.
-		seguirTexto := false
-		flag.Visit(func(fl *flag.Flag) {
-			if fl.Name == "seguir" {
-				seguirTexto = *seguir
-			}
-		})
-		err = RodaTexto(fonte, f, *desde, seguirTexto)
-	} else {
-		err = RodaTUI(fonte, f, janela, *seguir)
-	}
-	if err != nil {
-		falha("%v", err)
-	}
-}
+	fonte := Fonte{Grupo: *grupo, Perfil: *perfil, Regiao: *regiao, Arquivo: *arquivo, Limite: *limite}
 
-// "Clube" e "clubecontroller" viram "ClubeController".
-func nomeController(s string) string {
-	s = strings.TrimSpace(s)
-	if !strings.HasSuffix(strings.ToLower(s), "controller") {
-		s += "Controller"
-	}
-	base := s[:len(s)-len("controller")]
-	if base == "" {
-		return s
-	}
-	return strings.ToUpper(base[:1]) + base[1:] + "Controller"
-}
-
-// A TUI anda pelas janelas fixas; -desde escolhe a mais próxima que cobre o pedido.
-func indiceJanela(d time.Duration) int {
-	for i, j := range janelas {
-		if d <= j {
-			return i
+	var term *Terminal
+	if !*texto {
+		t, err := AbreTerminal()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "blogs: %v — usando o modo texto\n", err)
+		} else {
+			term = t
 		}
 	}
-	return len(janelas) - 1
-}
+	if term == nil {
+		if e == nil {
+			v := escopos()[0]
+			e = &v
+		}
+		if m == nil {
+			v := ModoTodos
+			m = &v
+		}
+		if err := modoTexto(fonte, *e, *m, *desde, *intervalo, *seguir); err != nil {
+			falha("%v", err)
+		}
+		return
+	}
 
-func terminalInterativo() bool {
-	info, err := os.Stdout.Stat()
-	return err == nil && info.Mode()&os.ModeCharDevice != 0
+	defer term.Fecha()
+	NovoApp(term, fonte, *desde, *intervalo).Roda(e, m)
+	term.Fecha()
+	fmt.Println(cAmarelo + "⏹  Até mais!" + cReset)
+	os.Exit(0)
 }
 
 func padrao(v, p string) string {
@@ -110,7 +97,7 @@ func padrao(v, p string) string {
 	return v
 }
 
-func falha(formato string, args ...any) {
-	fmt.Fprintf(os.Stderr, "blogs: "+formato+"\n", args...)
+func falha(f string, a ...any) {
+	fmt.Fprintf(os.Stderr, "blogs: "+f+"\n", a...)
 	os.Exit(1)
 }
