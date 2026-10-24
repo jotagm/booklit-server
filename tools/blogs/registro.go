@@ -82,6 +82,7 @@ var (
 var (
 	reAnsi    = regexp.MustCompile("\x1b\\[[0-9;]*m")
 	reHandler = regexp.MustCompile(` handler=([A-Za-z0-9_]+)#`)
+	reEOL     = regexp.MustCompile(`\s*<EOL>\s*`)
 	reMais    = regexp.MustCompile(`^\.\.\. \d+ (more|common frames omitted)`)
 )
 
@@ -152,6 +153,11 @@ func (m *Montador) Adiciona(eventos []Evento) int {
 
 func (m *Montador) adicionaUm(e Evento) {
 	texto := strings.TrimRight(reAnsi.ReplaceAllString(e.Mensagem, ""), "\r\n ")
+	// O Spring troca as quebras de linha do corpo de uma resposta HTTP por <EOL>; junta tudo
+	// numa linha só, sem a indentação do JSON.
+	if strings.Contains(texto, "<EOL>") {
+		texto = reEOL.ReplaceAllString(texto, " ")
+	}
 	if strings.TrimSpace(texto) == "" {
 		return
 	}

@@ -231,3 +231,15 @@ func TestFiltroPorController(t *testing.T) {
 		}
 	}
 }
+
+func TestEOLDoSpring(t *testing.T) {
+	m := NovoMontador(0)
+	m.Adiciona([]Evento{
+		{ID: "1", Stream: "api", Timestamp: 1, Mensagem: "10:00:00.000 ERROR [aa] a.GoogleBooksClient   Falha"},
+		{ID: "2", Stream: "api", Timestamp: 2, Mensagem: `org.springframework.web.client.HttpClientErrorException$BadRequest: 400 Bad Request: "{<EOL>  "error": {<EOL>    "code": 400,<EOL>    "message": "API key not valid."<EOL>  }<EOL>}<EOL>"`},
+	})
+	c := m.Registros[0].Continua
+	if len(c) != 1 || strings.Contains(c[0], "<EOL>") || !strings.Contains(c[0], `"{ "error": { "code": 400, "message": "API key not valid." } } "`) {
+		t.Errorf("continuação: %q", c)
+	}
+}
