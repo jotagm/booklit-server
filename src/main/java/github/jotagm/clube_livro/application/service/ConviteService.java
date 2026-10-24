@@ -5,16 +5,21 @@ import github.jotagm.clube_livro.domain.clube.Clube;
 import github.jotagm.clube_livro.domain.clube.ClubePapel;
 import github.jotagm.clube_livro.domain.clube.convite.Convite;
 import github.jotagm.clube_livro.domain.clube.convite.ConviteStatus;
+import github.jotagm.clube_livro.domain.exceptions.ConflitoException;
 import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
+import github.jotagm.clube_livro.domain.exceptions.RegraDeNegocioException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Slf4j
@@ -28,6 +33,39 @@ public class ConviteService {
     private final ClubeService clubeService;
     private final LeituraClubeService leituraClubeService;
 
+    /** Teto de validade: um convite por e-mail esquecido por meses não deveria continuar valendo. */
+    static final Duration VALIDADE_MAXIMA = Duration.ofDays(30);
+
+    /**
+     * Cria um convite por e-mail. Recusa expiração fora de (agora, agora + 30 dias], convite
+     * para quem já é membro e um segundo convite pendente para o mesmo e-mail no mesmo clube.
+     */
+    @Transactional
+    public Convite criar(Clube clube, Usuario convidadoPor, String email, LocalDateTime expiraEm) {
+        String destinatario = email.strip().toLowerCase(Locale.ROOT);
+        LocalDateTime agora = LocalDateTime.now();
+
+        if (!expiraEm.isAfter(agora)) {
+            throw new RegraDeNegocioException("A expiração do convite precisa estar no futuro");
+        }
+        if (expiraEm.isAfter(agora.plus(VALIDADE_MAXIMA))) {
+            throw new RegraDeNegocioException("O convite pode valer no máximo " + VALIDADE_MAXIMA.toDays() + " dias");
+        }
+        boolean jaEMembro = usuarioClubeService.listarPorClube(clube.getId()).stream()
+                .anyMatch(uc -> uc.getUsuario().getEmail().equalsIgnoreCase(destinatario));
+        if (jaEMembro) {
+            throw new ConflitoException("Essa pessoa já é membro do clube");
+        }
+        if (conviteRepository.existsByClubeIdAndEmailDestinatarioIgnoreCaseAndStatusAndExpiraEmAfter(
+                clube.getId(), destinatario, ConviteStatus.PENDENTE, agora)) {
+            throw new ConflitoException("Já existe um convite pendente para este e-mail neste clube");
+        }
+
+        Convite convite = conviteRepository.save(Convite.novo(clube, convidadoPor, destinatario, expiraEm));
+        log.info("Convite criado id={} clube={}", convite.getId(), clube.getId());
+        return convite;
+    }
+
     public Convite salvar(Convite convite) {
         return conviteRepository.save(convite);
     }
@@ -37,20 +75,27 @@ public class ConviteService {
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Convite não encontrado"));
     }
 
+    /**
+     * Aceita uma vez só (já respondido vira 409). Quem já entrou no clube pelo link só tem o
+     * convite marcado como aceito, sem ganhar uma segunda linha de membro.
+     */
+    @Transactional
     public Convite aceitarConvite(UUID id, String emailUsuario) {
         Convite convite = buscarPorId(id);
 
         if (!convite.pertenceA(emailUsuario)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso negado");
         }
-        if (convite.estaExpirado(LocalDateTime.now())) {
+        if (convite.estaPendente() && convite.estaExpirado(LocalDateTime.now())) {
             throw new ResponseStatusException(HttpStatus.GONE, "Convite expirado");
         }
 
         convite.aceitar();
 
         Usuario usuario = usuarioService.buscarPorEmail(emailUsuario);
-        adicionarComoMembro(usuario, convite.getClube());
+        if (!ehMembro(usuario, convite.getClube())) {
+            adicionarComoMembro(usuario, convite.getClube());
+        }
 
         log.info("Convite aceito id={} clube={} usuario={}",
                 convite.getId(), convite.getClube().getId(), emailUsuario);
@@ -58,6 +103,7 @@ public class ConviteService {
         return conviteRepository.save(convite);
     }
 
+    @Transactional
     public Convite rejeitarConvite(UUID id, String emailUsuario) {
         Convite convite = buscarPorId(id);
 
@@ -91,15 +137,19 @@ public class ConviteService {
      * Entrada pelo link de convite. Idempotente: quem já é membro só é levado ao clube, sem
      * erro — o mesmo link costuma ser clicado mais de uma vez no grupo.
      */
+    @Transactional
     public Clube entrarPorCodigo(String codigo, Usuario usuario) {
         Clube clube = clubeService.buscarPorCodigoConvite(codigo);
-        boolean jaMembro = usuarioClubeService.listarPorClube(clube.getId()).stream()
-                .anyMatch(uc -> uc.getUsuario().getId().equals(usuario.getId()));
-        if (!jaMembro) {
+        if (!ehMembro(usuario, clube)) {
             adicionarComoMembro(usuario, clube);
             log.info("Entrada por link clube={} usuario={}", clube.getId(), usuario.getEmail());
         }
         return clube;
+    }
+
+    private boolean ehMembro(Usuario usuario, Clube clube) {
+        return usuarioClubeService.listarPorClube(clube.getId()).stream()
+                .anyMatch(uc -> uc.getUsuario().getId().equals(usuario.getId()));
     }
 
     private void adicionarComoMembro(Usuario usuario, Clube clube) {
@@ -119,6 +169,7 @@ public class ConviteService {
         conviteRepository.deleteById(id);
     }
 
+    @Transactional
     public int expirarVencidos() {
         List<Convite> vencidos = conviteRepository.findByStatusAndExpiraEmBefore(ConviteStatus.PENDENTE, LocalDateTime.now());
         vencidos.forEach(Convite::expirar);

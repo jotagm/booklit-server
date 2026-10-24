@@ -13,4 +13,6 @@ public interface ConviteRepository extends JpaRepository <Convite, UUID>{
     List<Convite> findByEmailDestinatarioIgnoreCaseAndStatusOrderByCreatedAtDesc(String email, ConviteStatus status);
     List<Convite> findByClubeId(UUID clubeId);
     List<Convite> findByStatusAndExpiraEmBefore(ConviteStatus status, LocalDateTime momento);
+    boolean existsByClubeIdAndEmailDestinatarioIgnoreCaseAndStatusAndExpiraEmAfter(
+            UUID clubeId, String email, ConviteStatus status, LocalDateTime momento);
 }

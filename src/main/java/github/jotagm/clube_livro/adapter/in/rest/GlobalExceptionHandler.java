@@ -4,6 +4,7 @@ import github.jotagm.auth.otp.LimiteDeEmissaoException;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.ErroResponse;
 import github.jotagm.clube_livro.domain.exceptions.AcessoNegadoException;
 import github.jotagm.clube_livro.domain.exceptions.ComentarioAninhadoException;
+import github.jotagm.clube_livro.domain.exceptions.ConflitoException;
 import github.jotagm.clube_livro.domain.exceptions.IntervaloInvalidoException;
 import github.jotagm.clube_livro.domain.exceptions.RegraDeNegocioException;
 import github.jotagm.clube_livro.domain.exceptions.LivroExternoIndisponivelException;
@@ -57,6 +58,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UsuarioJaVotouException.class)
     public ResponseEntity<ErroResponse> tratarUsuarioJaVotou(UsuarioJaVotouException ex,
                                                               HttpServletRequest request) {
+        return construir(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ConflitoException.class)
+    public ResponseEntity<ErroResponse> tratarConflito(ConflitoException ex, HttpServletRequest request) {
         return construir(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
@@ -207,6 +213,7 @@ public class GlobalExceptionHandler {
         if (causa instanceof RecursoNaoEncontradoException) return HttpStatus.NOT_FOUND;
         if (causa instanceof AcessoNegadoException) return HttpStatus.FORBIDDEN;
         if (causa instanceof UsuarioJaVotouException) return HttpStatus.CONFLICT;
+        if (causa instanceof ConflitoException) return HttpStatus.CONFLICT;
         if (causa instanceof VotacaoSemVotosException) return HttpStatus.UNPROCESSABLE_ENTITY;
         if (causa instanceof ComentarioAninhadoException) return HttpStatus.UNPROCESSABLE_ENTITY;
         if (causa instanceof IntervaloInvalidoException) return HttpStatus.UNPROCESSABLE_ENTITY;
