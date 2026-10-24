@@ -37,3 +37,15 @@ output "banco_endpoint" {
 output "log_group" {
   value = aws_cloudwatch_log_group.api.name
 }
+
+output "dns_dkim" {
+  description = "Crie estes 3 registros CNAME na Name.com (Host -> Answer)"
+  value = {
+    for t in local.dkim_tokens : "${t}._domainkey" => "${t}.dkim.amazonses.com"
+  }
+}
+
+output "dns_dmarc" {
+  description = "Registro TXT recomendado (Host _dmarc): pede relatórios sem rejeitar nada ainda"
+  value       = "v=DMARC1; p=none; rua=mailto:dmarc@${var.dominio_email}"
+}

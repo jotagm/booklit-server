@@ -76,6 +76,12 @@ resource "aws_iam_role_policy" "api" {
         Resource = ["arn:aws:sqs:${var.regiao}:${data.aws_caller_identity.atual.account_id}:booklit-prod-*"]
       },
       {
+        Sid      = "EnviarEmail"
+        Effect   = "Allow"
+        Action   = ["ses:SendEmail"]
+        Resource = ["arn:aws:ses:${var.regiao}:${data.aws_caller_identity.atual.account_id}:identity/*"]
+      },
+      {
         Sid      = "Logs"
         Effect   = "Allow"
         Action   = ["logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogStreams"]

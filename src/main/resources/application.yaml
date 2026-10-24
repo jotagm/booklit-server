@@ -40,6 +40,10 @@ booklit:
     regiao: ${AWS_REGION:us-east-1}
     endpoint: ${BOOKLIT_AWS_ENDPOINT:}
   auth:
+    login:
+      # Login em duas etapas: senha e depois um codigo de 6 digitos enviado por e-mail.
+      # So ligue com o envio de e-mail funcionando (SES fora do sandbox), senao ninguem entra.
+      exigir-codigo: ${BOOKLIT_LOGIN_EXIGIR_CODIGO:false}
     otp:
       # Chave do HMAC dos codigos, base64 com 32+ bytes (openssl rand -base64 32).
       # Vazia = chave aleatoria por instancia (ok em dev; codigos morrem no restart).

@@ -17,8 +17,11 @@ locals {
       BOOKLIT_EVENTOS_HABILITADO = "true"
       BOOKLIT_EVENTOS_TOPICO_ARN = module.mensageria.topic_arn
       BOOKLIT_EVENTOS_FILA_URL   = module.mensageria.queue_urls["notifications"]
-      # SES fica para quando o domínio estiver verificado e a conta fora do sandbox.
-      BOOKLIT_EMAIL_HABILITADO = "false"
+      # Só ligue com o domínio verificado (DKIM) no SES; ver email.tf.
+      BOOKLIT_EMAIL_HABILITADO = tostring(var.email_habilitado)
+      BOOKLIT_EMAIL_REMETENTE  = "no-reply@${var.dominio_email}"
+      # Login em duas etapas: só depois do acesso de produção do SES, senão ninguém entra.
+      BOOKLIT_LOGIN_EXIGIR_CODIGO = tostring(var.login_exige_codigo)
     },
     # O SSM não aceita valor vazio: variável vazia simplesmente não vai para o container.
     var.api_dominio == "" ? {} : { API_DOMINIO = var.api_dominio },

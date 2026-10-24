@@ -82,7 +82,7 @@ func RodaTUI(fonte *Fonte, filtro Filtro, janela int, seguir bool) error {
 	signal.Notify(redim, syscall.SIGWINCH)
 	defer signal.Stop(redim)
 
-	tick := time.NewTicker(3 * time.Second)
+	tick := time.NewTicker(2 * time.Second)
 	defer tick.Stop()
 
 	a.recarrega()

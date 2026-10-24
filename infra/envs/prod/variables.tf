@@ -75,3 +75,27 @@ variable "retencao_backup_dias" {
   type        = number
   default     = 1
 }
+
+variable "dominio_email" {
+  description = "Domínio que envia os e-mails (identidade no SES, com DKIM)"
+  type        = string
+  default     = "booklit.bio"
+}
+
+variable "email_habilitado" {
+  description = "Liga o envio de e-mail pela API. Só depois do domínio verificado no SES"
+  type        = bool
+  default     = false
+}
+
+variable "login_exige_codigo" {
+  description = "Login em duas etapas (senha + código por e-mail). Só depois do acesso de produção do SES"
+  type        = bool
+  default     = false
+}
+
+variable "emails_teste_sandbox" {
+  description = "E-mails que podem receber enquanto o SES está no sandbox (a AWS manda um link de confirmação)"
+  type        = list(string)
+  default     = []
+}
