@@ -96,7 +96,7 @@ func (a *App) rodape(w int) string {
 	case modoEstatisticas, modoAjuda:
 		return cinza + corta(" ↑↓ rolar · Esc voltar", w)
 	}
-	return cinza + corta(" / busca · c controller · l nível · e 4xx/5xx · a só requisições · r requisição · s stream · t janela · f ao vivo · v estatísticas · x limpar · ? ajuda · q sair", w)
+	return cinza + corta(" / busca · c controller · l nível · e 4xx/5xx · a só requisições · r requisição · s stream · t janela · f pausar · v estatísticas · x limpar · ? ajuda · q sair", w)
 }
 
 // --- lista -----------------------------------------------------------------------------
@@ -455,7 +455,7 @@ func linhasAjuda() []string {
 		"",
 		negrito + " dados" + reset,
 		"   t               janela: 15min → 1h → 6h → 1d → 3d (busca de novo)",
-		"   f               ao vivo: busca novidades a cada 3 s e acompanha o fim da lista",
+		"   f               pausa / retoma o ao vivo (ligado ao abrir; busca novidades a cada 2 s)",
 		"   R               recarregar a janela",
 		"   v               estatísticas: requisições, 4xx/5xx e latência por controller e endpoint",
 		"",

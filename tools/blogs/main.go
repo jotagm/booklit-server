@@ -23,7 +23,7 @@ func main() {
 		req        = flag.String("req", "", "requestId: só as linhas dessa requisição")
 		status     = flag.Int("status", 0, "só requisições com status >= N (ex.: 400, 500)")
 		acessos    = flag.Bool("acessos", false, "só as linhas de requisição")
-		seguir     = flag.Bool("seguir", false, "ao vivo (na TUI liga o modo; em texto fica imprimindo)")
+		seguir     = flag.Bool("seguir", true, "ao vivo: atualiza sozinho (-seguir=false abre pausado; em -texto só segue se pedir)")
 		texto      = flag.Bool("texto", false, "imprime no terminal em vez de abrir a interface")
 		arquivo    = flag.String("arquivo", "", "lê eventos de um JSON salvo do filter-log-events (offline)")
 		limite     = flag.Int("limite", 20000, "máximo de eventos por busca")
@@ -59,7 +59,14 @@ func main() {
 	janela := indiceJanela(*desde)
 	var err error
 	if *texto || !terminalInterativo() {
-		err = RodaTexto(fonte, f, *desde, *seguir)
+		// No modo texto o padrão é imprimir e sair (bom para pipe); só segue com -seguir explícito.
+		seguirTexto := false
+		flag.Visit(func(fl *flag.Flag) {
+			if fl.Name == "seguir" {
+				seguirTexto = *seguir
+			}
+		})
+		err = RodaTexto(fonte, f, *desde, seguirTexto)
 	} else {
 		err = RodaTUI(fonte, f, janela, *seguir)
 	}

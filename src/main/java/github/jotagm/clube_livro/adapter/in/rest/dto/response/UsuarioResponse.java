@@ -9,7 +9,8 @@ public record UsuarioResponse(
         String nome,
         String email,
         String bio,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        boolean emailVerificado
 ) {
     public static UsuarioResponse from(Usuario usuario) {
         return new UsuarioResponse(
@@ -17,7 +18,8 @@ public record UsuarioResponse(
                 usuario.getNome(),
                 usuario.getEmail(),
                 usuario.getBio(),
-                usuario.getCreatedAt()
+                usuario.getCreatedAt(),
+                usuario.emailVerificado()
         );
     }
 }

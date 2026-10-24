@@ -41,7 +41,7 @@ func RodaTexto(fonte *Fonte, f Filtro, janela time.Duration, seguir bool) error 
 		if !seguir {
 			return nil
 		}
-		time.Sleep(3 * time.Second)
+		time.Sleep(2 * time.Second)
 	}
 }
 

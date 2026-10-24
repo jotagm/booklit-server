@@ -30,6 +30,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -77,7 +78,7 @@ class OtpEmailIntegracaoTest {
 
     @Test
     void emiteEntregaEVerificaUmaVezSo() throws Exception {
-        String desafioId = emitir(email, "LOGIN");
+        String desafioId = emitir(email, "REDEFINIR_PIN");
 
         SendEmailRequest enviado = ultimoEnvio();
         assertEquals(email, enviado.destination().toAddresses().getFirst());
@@ -85,29 +86,29 @@ class OtpEmailIntegracaoTest {
         String codigo = codigoDe(enviado);
 
         mockMvc.perform(post("/auth/otp/email/verificacao").contentType(APPLICATION_JSON)
-                        .content(verificacao(desafioId, "LOGIN", codigo.substring(0, 3) + " " + codigo.substring(3))))
+                        .content(verificacao(desafioId, "REDEFINIR_PIN", codigo.substring(0, 3) + " " + codigo.substring(3))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(email));
 
         mockMvc.perform(post("/auth/otp/email/verificacao").contentType(APPLICATION_JSON)
-                        .content(verificacao(desafioId, "LOGIN", codigo)))
+                        .content(verificacao(desafioId, "REDEFINIR_PIN", codigo)))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void codigoErradoInformaTentativasRestantes() throws Exception {
-        String desafioId = emitir(email, "LOGIN");
+        String desafioId = emitir(email, "REDEFINIR_PIN");
         String errado = codigoDe(ultimoEnvio()).equals("000000") ? "111111" : "000000";
 
         mockMvc.perform(post("/auth/otp/email/verificacao").contentType(APPLICATION_JSON)
-                        .content(verificacao(desafioId, "LOGIN", errado)))
+                        .content(verificacao(desafioId, "REDEFINIR_PIN", errado)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.mensagem").value("Código incorreto. Tentativas restantes: 4."));
     }
 
     @Test
     void emailSemContaRecebeAMesmaRespostaMasNadaEEnviado() throws Exception {
-        emitir("ninguem-" + UUID.randomUUID().toString().substring(0, 8) + "@teste.dev", "LOGIN");
+        emitir("ninguem-" + UUID.randomUUID().toString().substring(0, 8) + "@teste.dev", "REDEFINIR_PIN");
 
         verify(ses, never()).sendEmail(any(SendEmailRequest.class));
     }
@@ -121,12 +122,36 @@ class OtpEmailIntegracaoTest {
 
     @Test
     void reenvioImediatoDa429ComRetryAfter() throws Exception {
-        emitir(email, "LOGIN");
+        emitir(email, "REDEFINIR_PIN");
 
         mockMvc.perform(post("/auth/otp/email").contentType(APPLICATION_JSON)
-                        .content(pedido(email, "LOGIN")))
+                        .content(pedido(email, "REDEFINIR_PIN")))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(header().string("Retry-After", "60"));
+    }
+
+    @Test
+    void codigoDeLoginNaoSaiPeloEndpointPublico() throws Exception {
+        mockMvc.perform(post("/auth/otp/email").contentType(APPLICATION_JSON)
+                        .content(pedido(email, "LOGIN")))
+                .andExpect(status().isUnprocessableEntity());
+
+        verify(ses, never()).sendEmail(any(SendEmailRequest.class));
+    }
+
+    @Test
+    void verificarEmailConfirmaAConta() throws Exception {
+        String desafioId = emitir(email, "VERIFICAR_EMAIL");
+
+        mockMvc.perform(post("/auth/otp/email/verificacao").contentType(APPLICATION_JSON)
+                        .content(verificacao(desafioId, "VERIFICAR_EMAIL", codigoDe(ultimoEnvio()))))
+                .andExpect(status().isOk());
+
+        String token = json.readTree(mockMvc.perform(post("/auth/login").contentType(APPLICATION_JSON)
+                        .content("{\"email\":\"" + email + "\",\"senha\":\"senha12345\"}"))
+                .andReturn().getResponse().getContentAsString()).get("token").asText();
+        mockMvc.perform(get("/usuarios/me").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$.emailVerificado").value(true));
     }
 
     @Test

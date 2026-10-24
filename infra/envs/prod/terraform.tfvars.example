@@ -15,3 +15,10 @@ email_alertas = "voce@exemplo.com"
 
 # Já existe provedor OIDC do GitHub na conta? Então:
 # criar_oidc_github = false
+
+# E-mail (ver email.tf). Ordem: apply -> registros DNS da saída dns_dkim na Name.com ->
+# domínio "Verified" no SES -> email_habilitado = true -> pedir acesso de produção ->
+# login_exige_codigo = true.
+# emails_teste_sandbox = ["voce@gmail.com"]
+# email_habilitado     = true
+# login_exige_codigo   = true

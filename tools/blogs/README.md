@@ -28,7 +28,8 @@ Precisa do AWS CLI no WSL com o profile `booklit` (o mesmo do Terraform). Outro 
 ## Usar
 
 ```bash
-blogs                                   # interface; ? mostra os atalhos
+blogs                                   # interface ao vivo; ? mostra os atalhos
+blogs -seguir=false                     # abre pausado
 blogs -desde 6h -nivel ERROR            # já abre filtrado
 blogs -texto -controller Convite        # imprime (bom para | grep, | less -R)
 blogs -texto -seguir -status 500        # acompanha só as falhas 5xx
@@ -45,7 +46,7 @@ blogs -texto -req 99aa88bb              # todas as linhas de uma requisição
 | `r` | só a requisição da linha selecionada (o fluxo inteiro dela) |
 | `s` | stream: api + caddy → api → caddy |
 | `t` | janela: 15min → 1h → 6h → 1d → 3d |
-| `f` | ao vivo (atualiza a cada 3 s) |
+| `f` | pausa / retoma o ao vivo (abre ao vivo, atualizando a cada 2 s) |
 | `v` | estatísticas: req, 4xx/5xx, média/p95/máx por controller e endpoint, mais lentas |
 | `Enter` | detalhe: campos da requisição e stack trace inteiro (frames do Booklit em destaque) |
 | `x` / `q` | limpa filtros / sai |
