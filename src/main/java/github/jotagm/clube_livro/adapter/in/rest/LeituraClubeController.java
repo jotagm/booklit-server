@@ -5,10 +5,11 @@ import github.jotagm.clube_livro.adapter.in.rest.dto.request.LeituraClubeRequest
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.SpotifyRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.GoogleBooksResponse;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.LeituraClubeResponse;
-import github.jotagm.clube_livro.adapter.out.client.CampoDeBusca;
-import github.jotagm.clube_livro.adapter.out.client.GoogleBooksClient;
+import github.jotagm.clube_livro.application.service.BuscaDeLivrosService;
 import github.jotagm.clube_livro.application.service.LeituraClubeService;
 import github.jotagm.clube_livro.configs.RequireLider;
+import github.jotagm.clube_livro.domain.livro.CampoDeBusca;
+import github.jotagm.clube_livro.domain.livro.ConsultaDeLivros;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -33,7 +34,7 @@ import java.util.UUID;
 public class LeituraClubeController {
 
     private final LeituraClubeService leituraClubeService;
-    private final GoogleBooksClient googleBooksClient;
+    private final BuscaDeLivrosService buscaDeLivrosService;
 
     @Operation(
             summary = "Cria uma leitura para o clube",
@@ -126,10 +127,12 @@ public class LeituraClubeController {
     }
 
     @Operation(
-            summary = "Busca livros no Google Books",
+            summary = "Busca livros (formato do Google Books)",
             description = """
-                    Proxy para a API do Google Books, usada para preencher `livroGoogleId`,
-                    `livroTitulo` e `livroCapaUrl` ao criar uma leitura ou opção de voto.
+                    Usada para preencher `livroGoogleId`, `livroTitulo` e `livroCapaUrl` ao criar uma
+                    leitura ou opção de voto. Mesma busca de `GET /livros/buscar` (Google Books com
+                    Open Library de reserva e cache), devolvida no formato do Google para os clientes
+                    já publicados. Clientes novos devem usar `/livros/buscar`.
 
                     Sem `idioma`, a busca disputa relevância com o catálogo inteiro e as edições
                     em inglês dominam o topo — procurar por "Duna" não traz a edição brasileira.
@@ -137,7 +140,7 @@ public class LeituraClubeController {
                     """)
     @ApiResponse(responseCode = "200", description = "Resultado da busca")
     @ApiResponse(responseCode = "400", description = "Nenhum termo informado")
-    @ApiResponse(responseCode = "502", description = "A API do Google Books está indisponível")
+    @ApiResponse(responseCode = "502", description = "Nenhum catálogo de livros respondeu")
     @GetMapping("/livros/buscar")
     public GoogleBooksResponse buscarLivroGoogle(
             @Parameter(description = "Termo a pesquisar", example = "Duna")
@@ -157,6 +160,7 @@ public class LeituraClubeController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe um termo para buscar");
         }
 
-        return googleBooksClient.buscarLivroGoogleBooks(consultado, campo, page, size, idioma);
+        return GoogleBooksResponse.de(
+                buscaDeLivrosService.buscar(new ConsultaDeLivros(consultado, campo, page, size, idioma)));
     }
 }
