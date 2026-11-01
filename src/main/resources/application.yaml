@@ -57,6 +57,14 @@ booklit:
       # e-mails ficam em GET <floci>/_aws/ses.
       habilitado: ${BOOKLIT_EMAIL_HABILITADO:false}
       remetente: ${BOOKLIT_EMAIL_REMETENTE:no-reply@booklit.bio}
+      # Quem entrega: "ses" chama o SES direto; "client-go" manda para o servico Client_GO
+      # (POST /notificacoes), que renderiza o template, envia pelo SES e guarda o historico.
+      provedor: ${BOOKLIT_EMAIL_PROVEDOR:ses}
+      client-go:
+        url: ${BOOKLIT_CLIENT_GO_URL:http://localhost:8081}
+        # Mesmo valor de um dos AVISO_TOKENS do Client_GO (32+ caracteres).
+        token: ${BOOKLIT_CLIENT_GO_TOKEN:}
+        timeout: ${BOOKLIT_CLIENT_GO_TIMEOUT:2s}
 
 jwt:
   secret: ${JWT_SECRET}

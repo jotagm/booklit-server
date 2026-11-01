@@ -6,9 +6,12 @@ import github.jotagm.auth.otp.HasherDeCodigo;
 import github.jotagm.auth.otp.PoliticaOtp;
 import github.jotagm.auth.otp.RepositorioDeDesafios;
 import github.jotagm.auth.otp.ServicoOtpEmail;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import github.jotagm.clube_livro.adapter.out.email.ClientGoEnviadorDeOtp;
 import github.jotagm.clube_livro.adapter.out.email.SesEnviadorDeOtp;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -73,7 +76,8 @@ public class AuthOtpConfig {
     }
 
     @Configuration
-    @ConditionalOnProperty(name = "booklit.auth.email.habilitado", havingValue = "true")
+    @ConditionalOnExpression("'${booklit.auth.email.habilitado:false}' == 'true' "
+            + "and '${booklit.auth.email.provedor:ses}' == 'ses'")
     static class EnvioPorSes {
 
         @Bean
@@ -90,6 +94,41 @@ public class AuthOtpConfig {
         EnviadorDeOtp enviadorDeOtp(SesV2Client ses,
                                     @Value("${booklit.auth.email.remetente:no-reply@booklit.bio}") String remetente) {
             return new SesEnviadorDeOtp(ses, remetente);
+        }
+    }
+
+    /**
+     * Entrega pelo Client_GO (SNS/SQS + SES, com histórico e retentativa) em vez de chamar o
+     * SES direto. O auth-core não muda: só a implementação da porta {@link EnviadorDeOtp}.
+     */
+    @Configuration
+    @ConditionalOnExpression("'${booklit.auth.email.habilitado:false}' == 'true' "
+            + "and '${booklit.auth.email.provedor:ses}' == 'client-go'")
+    static class EnvioPorClientGo {
+
+        @Bean
+        EnviadorDeOtp enviadorDeOtp(ObjectMapper json,
+                                    @Value("${booklit.auth.email.client-go.url}") String url,
+                                    @Value("${booklit.auth.email.client-go.token:}") String token,
+                                    @Value("${booklit.auth.email.client-go.timeout:2s}") Duration timeout) {
+            return new ClientGoEnviadorDeOtp(json, url, token, timeout);
+        }
+    }
+
+    /**
+     * Provedor desconhecido (um erro de digitação em BOOKLIT_EMAIL_PROVEDOR) derruba a subida:
+     * cair em silêncio no SES, ou em "desligado", esconderia o erro até o primeiro login.
+     */
+    @Configuration
+    @ConditionalOnExpression("'${booklit.auth.email.habilitado:false}' == 'true' "
+            + "and '${booklit.auth.email.provedor:ses}' != 'ses' "
+            + "and '${booklit.auth.email.provedor:ses}' != 'client-go'")
+    static class EnvioProvedorInvalido {
+
+        @Bean
+        EnviadorDeOtp enviadorDeOtp(@Value("${booklit.auth.email.provedor}") String provedor) {
+            throw new IllegalStateException("booklit.auth.email.provedor inválido: '" + provedor
+                    + "' (use 'ses' ou 'client-go')");
         }
     }
 

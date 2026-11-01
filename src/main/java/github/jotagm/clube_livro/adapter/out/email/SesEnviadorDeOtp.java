@@ -3,8 +3,6 @@ package github.jotagm.clube_livro.adapter.out.email;
 import github.jotagm.auth.otp.EnviadorDeOtp;
 import github.jotagm.auth.otp.Finalidade;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.services.sesv2.SesV2Client;
 import software.amazon.awssdk.services.sesv2.model.Body;
@@ -40,16 +38,7 @@ public class SesEnviadorDeOtp implements EnviadorDeOtp {
 
     @Override
     public void enviar(Mensagem mensagem) {
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    enviarAgora(mensagem);
-                }
-            });
-        } else {
-            enviarAgora(mensagem);
-        }
+        ExecutaAposCommit.executar(() -> enviarAgora(mensagem));
     }
 
     private void enviarAgora(Mensagem mensagem) {
