@@ -65,6 +65,13 @@ booklit:
         # Mesmo valor de um dos AVISO_TOKENS do Client_GO (32+ caracteres).
         token: ${BOOKLIT_CLIENT_GO_TOKEN:}
         timeout: ${BOOKLIT_CLIENT_GO_TIMEOUT:2s}
+  convites:
+    email:
+      # Avisa por e-mail quem foi convidado para um clube (template convite-clube do Client_GO,
+      # com o mesmo client-go.url/token acima). Desligado por padrao.
+      habilitado: ${BOOKLIT_CONVITE_EMAIL_HABILITADO:false}
+      # Endereco do site; o link do e-mail leva a <front-url>/clubes.
+      front-url: ${FRONT_URL:https://booklit.bio}
 
 jwt:
   secret: ${JWT_SECRET}

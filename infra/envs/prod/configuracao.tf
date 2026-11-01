@@ -22,6 +22,8 @@ locals {
       BOOKLIT_EMAIL_REMETENTE  = "no-reply@${var.dominio_email}"
       # Login em duas etapas: só depois do acesso de produção do SES, senão ninguém entra.
       BOOKLIT_LOGIN_EXIGIR_CODIGO = tostring(var.login_exige_codigo)
+      # Aviso por e-mail de convite de clube, pelo Client_GO (template convite-clube).
+      BOOKLIT_CONVITE_EMAIL_HABILITADO = tostring(var.convite_email_habilitado)
     },
     # O SSM não aceita valor vazio: variável vazia simplesmente não vai para o container.
     var.api_dominio == "" ? {} : { API_DOMINIO = var.api_dominio },

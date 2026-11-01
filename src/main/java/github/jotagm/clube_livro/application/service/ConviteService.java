@@ -1,6 +1,7 @@
 package github.jotagm.clube_livro.application.service;
 
 import github.jotagm.clube_livro.adapter.out.persistence.ConviteRepository;
+import github.jotagm.clube_livro.application.port.out.EnviadorDeConvite;
 import github.jotagm.clube_livro.domain.clube.Clube;
 import github.jotagm.clube_livro.domain.clube.ClubePapel;
 import github.jotagm.clube_livro.domain.clube.convite.Convite;
@@ -32,9 +33,17 @@ public class ConviteService {
     private final UsuarioService usuarioService;
     private final ClubeService clubeService;
     private final LeituraClubeService leituraClubeService;
+    private final EnviadorDeConvite enviadorDeConvite;
 
     /** Teto de validade: um convite por e-mail esquecido por meses não deveria continuar valendo. */
     static final Duration VALIDADE_MAXIMA = Duration.ofDays(30);
+
+    /**
+     * Teto de convites por e-mail que uma pessoa cria por hora. Cada convite dispara um e-mail
+     * para um endereço de terceiros, então sem teto um líder (ou uma conta invadida) viraria
+     * um disparador de spam com o domínio do Booklit.
+     */
+    static final int MAX_CONVITES_POR_HORA = 20;
 
     /**
      * Cria um convite por e-mail. Recusa expiração fora de (agora, agora + 30 dias], convite
@@ -61,8 +70,17 @@ public class ConviteService {
             throw new ConflitoException("Já existe um convite pendente para este e-mail neste clube");
         }
 
+        if (conviteRepository.countByConvidadoPorIdAndCreatedAtAfter(convidadoPor.getId(), agora.minusHours(1))
+                >= MAX_CONVITES_POR_HORA) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Muitos convites em pouco tempo. Tente de novo mais tarde.");
+        }
+
         Convite convite = conviteRepository.save(Convite.novo(clube, convidadoPor, destinatario, expiraEm));
         log.info("Convite criado id={} clube={}", convite.getId(), clube.getId());
+        // Depois do commit (o enviador cuida disso); se falhar, o convite continua valendo.
+        enviadorDeConvite.enviar(new EnviadorDeConvite.Mensagem(
+                convite.getId(), destinatario, convidadoPor.getNome(), clube.getNome()));
         return convite;
     }
 

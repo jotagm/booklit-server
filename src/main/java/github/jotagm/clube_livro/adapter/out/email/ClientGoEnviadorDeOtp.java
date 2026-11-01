@@ -119,7 +119,7 @@ public class ClientGoEnviadorDeOtp implements EnviadorDeOtp {
         };
     }
 
-    private static URI montarEndpoint(String url) {
+    static URI montarEndpoint(String url) {
         if (url == null || url.isBlank()) {
             throw new IllegalArgumentException("booklit.auth.email.client-go.url é obrigatória");
         }

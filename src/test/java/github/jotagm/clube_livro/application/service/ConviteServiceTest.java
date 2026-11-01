@@ -1,6 +1,7 @@
 package github.jotagm.clube_livro.application.service;
 
 import github.jotagm.clube_livro.adapter.out.persistence.ConviteRepository;
+import github.jotagm.clube_livro.application.port.out.EnviadorDeConvite;
 import github.jotagm.clube_livro.domain.clube.Clube;
 import github.jotagm.clube_livro.domain.clube.ClubePapel;
 import github.jotagm.clube_livro.domain.clube.UsuarioClube;
@@ -45,6 +46,9 @@ class ConviteServiceTest {
 
     @Mock
     private UsuarioService usuarioService;
+
+    @Mock
+    private EnviadorDeConvite enviadorDeConvite;
 
     @InjectMocks
     private ConviteService conviteService;
@@ -275,6 +279,10 @@ class ConviteServiceTest {
 
     // ---- criação ----
 
+    private Usuario lider() {
+        return Usuario.builder().id(1).nome("Ana").email("ana@email.com").build();
+    }
+
     @Test
     void criar_deveNormalizarEmailESalvarPendente() {
         Clube clube = Clube.builder().id(UUID.randomUUID()).nome("Clube").build();
@@ -284,7 +292,7 @@ class ConviteServiceTest {
                 .thenReturn(false);
         when(conviteRepository.save(any(Convite.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Convite convite = conviteService.criar(clube, null, "  Novo@Email.com ", LocalDateTime.now().plusDays(7));
+        Convite convite = conviteService.criar(clube, lider(), "  Novo@Email.com ", LocalDateTime.now().plusDays(7));
 
         assertThat(convite.getEmailDestinatario()).isEqualTo("novo@email.com");
         assertThat(convite.getStatus()).isEqualTo(ConviteStatus.PENDENTE);
@@ -294,7 +302,7 @@ class ConviteServiceTest {
     void criar_expiracaoNoPassadoDaRegraDeNegocio() {
         Clube clube = Clube.builder().id(UUID.randomUUID()).build();
 
-        assertThatThrownBy(() -> conviteService.criar(clube, null, "a@email.com", LocalDateTime.now().minusMinutes(1)))
+        assertThatThrownBy(() -> conviteService.criar(clube, lider(), "a@email.com", LocalDateTime.now().minusMinutes(1)))
                 .isInstanceOf(RegraDeNegocioException.class);
         verify(conviteRepository, never()).save(any());
     }
@@ -303,7 +311,7 @@ class ConviteServiceTest {
     void criar_expiracaoAlemDeTrintaDiasDaRegraDeNegocio() {
         Clube clube = Clube.builder().id(UUID.randomUUID()).build();
 
-        assertThatThrownBy(() -> conviteService.criar(clube, null, "a@email.com", LocalDateTime.now().plusDays(31)))
+        assertThatThrownBy(() -> conviteService.criar(clube, lider(), "a@email.com", LocalDateTime.now().plusDays(31)))
                 .isInstanceOf(RegraDeNegocioException.class)
                 .hasMessage("O convite pode valer no máximo 30 dias");
     }
@@ -315,7 +323,7 @@ class ConviteServiceTest {
         when(usuarioClubeService.listarPorClube(clube.getId()))
                 .thenReturn(List.of(UsuarioClube.novo(membro, clube, ClubePapel.MEMBRO)));
 
-        assertThatThrownBy(() -> conviteService.criar(clube, null, "MEMBRO@email.com", LocalDateTime.now().plusDays(7)))
+        assertThatThrownBy(() -> conviteService.criar(clube, lider(), "MEMBRO@email.com", LocalDateTime.now().plusDays(7)))
                 .isInstanceOf(ConflitoException.class)
                 .hasMessage("Essa pessoa já é membro do clube");
     }
@@ -328,8 +336,48 @@ class ConviteServiceTest {
                 eq(clube.getId()), eq("a@email.com"), eq(ConviteStatus.PENDENTE), any(LocalDateTime.class)))
                 .thenReturn(true);
 
-        assertThatThrownBy(() -> conviteService.criar(clube, null, "a@email.com", LocalDateTime.now().plusDays(7)))
+        assertThatThrownBy(() -> conviteService.criar(clube, lider(), "a@email.com", LocalDateTime.now().plusDays(7)))
                 .isInstanceOf(ConflitoException.class);
         verify(conviteRepository, never()).save(any());
+    }
+
+    @Test
+    void criar_avisaOConvidadoPorEmailComOsNomesDeQuemConvidouEDoClube() {
+        Clube clube = Clube.builder().id(UUID.randomUUID()).nome("Leitores de Sábado").build();
+        when(usuarioClubeService.listarPorClube(clube.getId())).thenReturn(List.of());
+        UUID id = UUID.randomUUID();
+        when(conviteRepository.save(any(Convite.class))).thenAnswer(inv -> {
+            Convite c = inv.getArgument(0);
+            return new Convite(id, c.getClube(), c.getConvidadoPor(), c.getEmailDestinatario(), c.getStatus(),
+                    c.getExpiraEm(), c.getCreatedAt());
+        });
+
+        conviteService.criar(clube, lider(), "Novo@Email.com", LocalDateTime.now().plusDays(7));
+
+        verify(enviadorDeConvite).enviar(
+                new EnviadorDeConvite.Mensagem(id, "novo@email.com", "Ana", "Leitores de Sábado"));
+    }
+
+    @Test
+    void criar_acimaDoTetoPorHoraDa429ENaoSalvaNemAvisa() {
+        Clube clube = Clube.builder().id(UUID.randomUUID()).build();
+        when(usuarioClubeService.listarPorClube(clube.getId())).thenReturn(List.of());
+        when(conviteRepository.countByConvidadoPorIdAndCreatedAtAfter(eq(1), any(LocalDateTime.class)))
+                .thenReturn((long) ConviteService.MAX_CONVITES_POR_HORA);
+
+        assertThatThrownBy(() -> conviteService.criar(clube, lider(), "a@email.com", LocalDateTime.now().plusDays(7)))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("429");
+        verify(conviteRepository, never()).save(any());
+        verify(enviadorDeConvite, never()).enviar(any());
+    }
+
+    @Test
+    void criar_conviteRecusadoPelaRegraNaoAvisaNinguem() {
+        Clube clube = Clube.builder().id(UUID.randomUUID()).build();
+
+        assertThatThrownBy(() -> conviteService.criar(clube, lider(), "a@email.com", LocalDateTime.now().minusMinutes(1)))
+                .isInstanceOf(RegraDeNegocioException.class);
+        verify(enviadorDeConvite, never()).enviar(any());
     }
 }

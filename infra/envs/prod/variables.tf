@@ -94,6 +94,12 @@ variable "email_habilitado" {
   default     = false
 }
 
+variable "convite_email_habilitado" {
+  description = "Avisa por e-mail quem foi convidado para um clube (via Client_GO). Só depois do template convite-clube publicado no Client_GO"
+  type        = bool
+  default     = false
+}
+
 variable "login_exige_codigo" {
   description = "Login em duas etapas (senha + código por e-mail). Só depois do acesso de produção do SES"
   type        = bool
