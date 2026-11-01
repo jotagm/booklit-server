@@ -5,12 +5,15 @@ import github.jotagm.auth.otp.Finalidade;
 import github.jotagm.auth.otp.ServicoOtpEmail;
 import github.jotagm.auth.otp.Verificacao;
 import github.jotagm.clube_livro.adapter.out.persistence.UsuarioRepository;
+import github.jotagm.clube_livro.configs.JwtService;
 import github.jotagm.clube_livro.domain.exceptions.RegraDeNegocioException;
+import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -23,6 +26,15 @@ public class OtpService {
 
     private final ServicoOtpEmail servico;
     private final UsuarioRepository usuarioRepository;
+    private final JwtService jwtService;
+
+    /**
+     * Resultado da conferência. {@code token} só vem na primeira verificação de e-mail de uma conta
+     * (o cadastro): provar a caixa de entrada de uma conta ainda não verificada entra direto, sem
+     * segunda tela de login. Em qualquer outro caso é nulo.
+     */
+    public record ResultadoVerificacao(Verificacao verificacao, String token) {
+    }
 
     /**
      * Para finalidades que exigem conta, um e-mail sem conta recebe a mesma resposta e passa
@@ -40,16 +52,25 @@ public class OtpService {
 
     /** Sem rollback em código incorreto: a tentativa gasta precisa ficar gravada. */
     @Transactional
-    public Verificacao verificar(UUID desafioId, Finalidade finalidade, String codigo) {
+    public ResultadoVerificacao verificar(UUID desafioId, Finalidade finalidade, String codigo) {
         recusarLogin(finalidade);
         Verificacao verificacao = servico.verificar(desafioId, finalidade, codigo);
+        String token = null;
         if (verificacao.sucesso() && finalidade == Finalidade.VERIFICAR_EMAIL) {
-            usuarioRepository.findByEmailIgnoreCase(verificacao.destinatario()).ifPresent(usuario -> {
+            Optional<Usuario> conta = usuarioRepository.findByEmailIgnoreCase(verificacao.destinatario());
+            if (conta.isPresent()) {
+                Usuario usuario = conta.get();
+                boolean primeiraVerificacao = !usuario.emailVerificado();
                 usuario.marcarEmailVerificado(LocalDateTime.now());
                 usuarioRepository.save(usuario);
-            });
+                // Conta que já tinha e-mail verificado não ganha token aqui: senão o código sozinho
+                // (sem a senha) serviria de login para quem tem acesso à caixa de entrada.
+                if (primeiraVerificacao) {
+                    token = jwtService.gerarToken(usuario.getEmail());
+                }
+            }
         }
-        return verificacao;
+        return new ResultadoVerificacao(verificacao, token);
     }
 
     /**

@@ -2,6 +2,7 @@ package github.jotagm.clube_livro.integracao;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import github.jotagm.clube_livro.adapter.out.persistence.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -16,6 +17,7 @@ import software.amazon.awssdk.services.sesv2.SesV2Client;
 import software.amazon.awssdk.services.sesv2.model.SendEmailRequest;
 import software.amazon.awssdk.services.sesv2.model.SendEmailResponse;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,6 +25,7 @@ import java.util.regex.Pattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.never;
@@ -60,6 +63,7 @@ class OtpEmailIntegracaoTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper json;
+    @Autowired private UsuarioRepository usuarioRepository;
     @MockitoBean private RestClient restClient;
     @MockitoBean private SesV2Client ses;
 
@@ -152,6 +156,52 @@ class OtpEmailIntegracaoTest {
                 .andReturn().getResponse().getContentAsString()).get("token").asText();
         mockMvc.perform(get("/usuarios/me").header("Authorization", "Bearer " + token))
                 .andExpect(jsonPath("$.emailVerificado").value(true));
+    }
+
+    @Test
+    void primeiraVerificacaoDeEmailJaEntraLogado() throws Exception {
+        String desafioId = emitir(email, "VERIFICAR_EMAIL");
+
+        String resposta = mockMvc.perform(post("/auth/otp/email/verificacao").contentType(APPLICATION_JSON)
+                        .content(verificacao(desafioId, "VERIFICAR_EMAIL", codigoDe(ultimoEnvio()))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value(email))
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andReturn().getResponse().getContentAsString();
+
+        String token = json.readTree(resposta).get("token").asText();
+        assertNotNull(token);
+        mockMvc.perform(get("/usuarios/me").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value(email))
+                .andExpect(jsonPath("$.emailVerificado").value(true));
+    }
+
+    @Test
+    void codigoErradoNoCadastroNaoDaTokenEAvisa() throws Exception {
+        String desafioId = emitir(email, "VERIFICAR_EMAIL");
+        String errado = codigoDe(ultimoEnvio()).equals("000000") ? "111111" : "000000";
+
+        mockMvc.perform(post("/auth/otp/email/verificacao").contentType(APPLICATION_JSON)
+                        .content(verificacao(desafioId, "VERIFICAR_EMAIL", errado)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.token").doesNotExist())
+                .andExpect(jsonPath("$.mensagem").value("Código incorreto. Tentativas restantes: 4."));
+    }
+
+    @Test
+    void contaJaVerificadaNaoGanhaTokenSoComOCodigo() throws Exception {
+        usuarioRepository.findByEmailIgnoreCase(email).ifPresent(u -> {
+            u.marcarEmailVerificado(LocalDateTime.now());
+            usuarioRepository.save(u);
+        });
+        String desafioId = emitir(email, "VERIFICAR_EMAIL");
+
+        mockMvc.perform(post("/auth/otp/email/verificacao").contentType(APPLICATION_JSON)
+                        .content(verificacao(desafioId, "VERIFICAR_EMAIL", codigoDe(ultimoEnvio()))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value(email))
+                .andExpect(jsonPath("$.token").doesNotExist());
     }
 
     @Test

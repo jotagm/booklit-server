@@ -7,6 +7,7 @@ import github.jotagm.clube_livro.adapter.in.rest.dto.request.VerificarOtpRequest
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.DesafioOtpResponse;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.OtpVerificadoResponse;
 import github.jotagm.clube_livro.application.service.OtpService;
+import github.jotagm.clube_livro.application.service.OtpService.ResultadoVerificacao;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -48,15 +49,21 @@ public class OtpController {
                 .body(new DesafioOtpResponse(emitido.desafioId(), emitido.expiraEm()));
     }
 
-    @Operation(summary = "Confere o código recebido por e-mail")
+    @Operation(
+            summary = "Confere o código recebido por e-mail",
+            description = """
+                    Na primeira verificação de e-mail de uma conta (o cadastro) a resposta traz também o
+                    token JWT: acertar o código já entra logado. Nas demais, só o e-mail confirmado.
+                    """)
     @ApiResponse(responseCode = "200", description = "Código correto; o desafio foi consumido")
     @ApiResponse(responseCode = "401", description = "Código incorreto, expirado, já usado ou sem tentativas",
             content = @Content)
     @PostMapping("/verificacao")
     public ResponseEntity<OtpVerificadoResponse> verificar(@RequestBody @Valid VerificarOtpRequest request) {
-        Verificacao verificacao = otpService.verificar(request.desafioId(), request.finalidade(), request.codigo());
+        ResultadoVerificacao resultado = otpService.verificar(request.desafioId(), request.finalidade(), request.codigo());
+        Verificacao verificacao = resultado.verificacao();
         return switch (verificacao.status()) {
-            case VERIFICADO -> ResponseEntity.ok(new OtpVerificadoResponse(verificacao.destinatario()));
+            case VERIFICADO -> ResponseEntity.ok(new OtpVerificadoResponse(verificacao.destinatario(), resultado.token()));
             case CODIGO_INCORRETO -> throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                     verificacao.tentativasRestantes() > 0
                             ? "Código incorreto. Tentativas restantes: " + verificacao.tentativasRestantes() + "."
