@@ -28,6 +28,7 @@ public class RegistroController {
 
     private final RegistroService registroService;
     private final UsuarioService usuarioService;
+    private final github.jotagm.clube_livro.application.service.FotoPerfilService fotoPerfilService;
 
     @Operation(summary = "Busca um registro por id")
     @ApiResponse(responseCode = "200", description = "Registro encontrado")
@@ -35,7 +36,7 @@ public class RegistroController {
     @GetMapping("/{id}")
     @RequireMembro("@registroService.buscarPorId(#id).leituraClube.clube.id")
     public ResponseEntity<RegistroResponse> buscarPorId(@Parameter(description = "Id do registro") @PathVariable UUID id) {
-        return ResponseEntity.ok(RegistroResponse.from(registroService.buscarPorId(id)));
+        return ResponseEntity.ok(RegistroResponse.from(registroService.buscarPorId(id), fotoPerfilService::urlDe));
     }
 
     @Operation(
@@ -46,7 +47,7 @@ public class RegistroController {
     @RequireMembro("@leituraClubeService.buscarPorId(#leituraClubeId).clube.id")
     public ResponseEntity<List<RegistroResponse>> listarPorLeitura(@Parameter(description = "Id da leitura") @PathVariable UUID leituraClubeId) {
         return ResponseEntity.ok(registroService.listarPorLeitura(leituraClubeId).stream()
-                .map(RegistroResponse::from)
+                .map(r -> RegistroResponse.from(r, fotoPerfilService::urlDe))
                 .toList());
     }
 
@@ -59,7 +60,7 @@ public class RegistroController {
             @Parameter(description = "Id da leitura") @PathVariable UUID leituraClubeId,
             @Parameter(description = "Id do usuário") @PathVariable Integer usuarioId) {
         return ResponseEntity.ok(RegistroResponse.from(
-                registroService.buscarPorLeituraEUsuario(leituraClubeId, usuarioId)));
+                registroService.buscarPorLeituraEUsuario(leituraClubeId, usuarioId), fotoPerfilService::urlDe));
     }
 
     @Operation(
@@ -75,6 +76,6 @@ public class RegistroController {
             @AuthenticationPrincipal UserDetails userDetails) {
         Usuario usuario = usuarioService.buscarPorEmail(userDetails.getUsername());
         return ResponseEntity.ok(RegistroResponse.from(
-                registroService.atualizarProgresso(leituraId, usuario.getId(), request.valorAtual())));
+                registroService.atualizarProgresso(leituraId, usuario.getId(), request.valorAtual()), fotoPerfilService::urlDe));
     }
 }

@@ -29,6 +29,7 @@ public class UsuarioClubeController {
 
     private final UsuarioClubeService usuarioClubeService;
     private final AutorizacaoClube autorizacaoClube;
+    private final github.jotagm.clube_livro.application.service.FotoPerfilService fotoPerfilService;
 
     @Operation(summary = "Busca um vínculo de membro por id")
     @ApiResponse(responseCode = "200", description = "Vínculo encontrado")
@@ -36,7 +37,7 @@ public class UsuarioClubeController {
     @GetMapping("/{id}")
     @RequireMembro("@usuarioClubeService.buscarPorId(#id).clube.id")
     public ResponseEntity<UsuarioClubeResponse> buscarPorId(@Parameter(description = "Id do vínculo") @PathVariable UUID id) {
-        return ResponseEntity.ok(UsuarioClubeResponse.from(usuarioClubeService.buscarPorId(id)));
+        return ResponseEntity.ok(UsuarioClubeResponse.from(usuarioClubeService.buscarPorId(id), fotoPerfilService::urlDe));
     }
 
     @Operation(summary = "Lista os clubes de um usuário")
@@ -45,7 +46,7 @@ public class UsuarioClubeController {
     public ResponseEntity<List<UsuarioClubeResponse>> listarPorUsuario(@Parameter(description = "Id do usuário") @PathVariable Integer usuarioId) {
         autorizacaoClube.exigirProprioUsuario(usuarioId);
         return ResponseEntity.ok(usuarioClubeService.listarPorUsuario(usuarioId).stream()
-                .map(UsuarioClubeResponse::from)
+                .map(m -> UsuarioClubeResponse.from(m, fotoPerfilService::urlDe))
                 .toList());
     }
 
@@ -55,7 +56,7 @@ public class UsuarioClubeController {
     @RequireMembro("#clubeId")
     public ResponseEntity<List<UsuarioClubeResponse>> listarPorClube(@Parameter(description = "Id do clube") @PathVariable UUID clubeId) {
         return ResponseEntity.ok(usuarioClubeService.listarPorClube(clubeId).stream()
-                .map(UsuarioClubeResponse::from)
+                .map(m -> UsuarioClubeResponse.from(m, fotoPerfilService::urlDe))
                 .toList());
     }
 
@@ -67,7 +68,7 @@ public class UsuarioClubeController {
     public ResponseEntity<UsuarioClubeResponse> buscarPorUsuarioEClube(@Parameter(description = "Id do clube") @PathVariable UUID clubeId,
                                                                         @Parameter(description = "Id do usuário") @PathVariable Integer usuarioId) {
         return ResponseEntity.ok(UsuarioClubeResponse.from(
-                usuarioClubeService.buscarPorUsuarioEClube(usuarioId, clubeId)));
+                usuarioClubeService.buscarPorUsuarioEClube(usuarioId, clubeId), fotoPerfilService::urlDe));
     }
 
     @Operation(
@@ -83,7 +84,7 @@ public class UsuarioClubeController {
         UsuarioClube uc = usuarioClubeService.buscarPorId(id);
         uc.mudarPapel(request.papel());
 
-        return ResponseEntity.ok(UsuarioClubeResponse.from(usuarioClubeService.atualizar(uc)));
+        return ResponseEntity.ok(UsuarioClubeResponse.from(usuarioClubeService.atualizar(uc), fotoPerfilService::urlDe));
     }
 
     @Operation(summary = "Remove um membro do clube", description = "O líder remove qualquer membro; um membro pode remover a si mesmo (sair do clube). O líder não pode sair sem antes transferir a liderança.")

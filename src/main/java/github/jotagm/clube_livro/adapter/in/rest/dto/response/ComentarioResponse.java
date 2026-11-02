@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import github.jotagm.clube_livro.domain.usuario.Usuario;
 import java.util.stream.Collectors;
 
 public record ComentarioResponse(
@@ -13,6 +15,7 @@ public record ComentarioResponse(
         UUID leituraClubeId,
         Integer usuarioId,
         String usuarioNome,
+        String usuarioFotoUrl,
         String conteudo,
         boolean removido,
         LocalDateTime createdAt,
@@ -21,10 +24,18 @@ public record ComentarioResponse(
 ) {
 
     public static ComentarioResponse deFolha(Comentario comentario) {
-        return montar(comentario, List.of());
+        return deFolha(comentario, u -> null);
+    }
+
+    public static ComentarioResponse deFolha(Comentario comentario, Function<Usuario, String> foto) {
+        return montar(comentario, List.of(), foto);
     }
 
     public static List<ComentarioResponse> montarArvore(List<Comentario> todos) {
+        return montarArvore(todos, u -> null);
+    }
+
+    public static List<ComentarioResponse> montarArvore(List<Comentario> todos, Function<Usuario, String> foto) {
         Map<UUID, List<Comentario>> respostasPorPai = todos.stream()
                 .filter(c -> c.getComentarioPai() != null)
                 .collect(Collectors.groupingBy(c -> c.getComentarioPai().getId()));
@@ -32,17 +43,19 @@ public record ComentarioResponse(
         return todos.stream()
                 .filter(c -> c.getComentarioPai() == null)
                 .map(raiz -> montar(raiz, respostasPorPai.getOrDefault(raiz.getId(), List.of()).stream()
-                        .map(ComentarioResponse::deFolha)
-                        .toList()))
+                        .map(c -> deFolha(c, foto))
+                        .toList(), foto))
                 .toList();
     }
 
-    private static ComentarioResponse montar(Comentario comentario, List<ComentarioResponse> respostas) {
+    private static ComentarioResponse montar(Comentario comentario, List<ComentarioResponse> respostas,
+                                              Function<Usuario, String> foto) {
         return new ComentarioResponse(
                 comentario.getId(),
                 comentario.getLeituraClube().getId(),
                 comentario.getUsuario().getId(),
                 comentario.getUsuario().getNome(),
+                foto.apply(comentario.getUsuario()),
                 comentario.isRemovido() ? "[comentário removido]" : comentario.getConteudo(),
                 comentario.isRemovido(),
                 comentario.getCreatedAt(),

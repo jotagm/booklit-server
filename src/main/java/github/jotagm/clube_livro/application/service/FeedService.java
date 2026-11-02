@@ -46,6 +46,7 @@ public class FeedService {
     private final LeituraClubeRepository leituraClubeRepository;
     private final ReacaoService reacaoService;
     private final AutorizacaoClube autorizacaoClube;
+    private final FotoPerfilService fotoPerfilService;
 
     /** Itens sem reações montadas ainda — o mesmo contêiner serve para ordenar antes de consultar reações. */
     private record Bruto(String id, TipoFeed tipo, Clube clube, Usuario autor, LocalDateTime quando,
@@ -113,6 +114,7 @@ public class FeedService {
             Usuario a = b.autor();
             return new FeedItemResponse(b.id(), b.tipo(), b.clube().getId(), b.clube().getNome(),
                     a == null ? null : a.getId(), a == null ? null : a.getNome(),
+                    a == null ? null : fotoPerfilService.urlDe(a),
                     a != null && a.getId().equals(usuario.getId()), b.quando(),
                     b.livroTitulo(), b.livroCapaUrl(), b.valorAtual(), b.valorMeta(), b.unidade(), b.texto(),
                     b.leituraId(), ReacaoService.contar(deste), ReacaoService.minha(deste, usuario.getId()));

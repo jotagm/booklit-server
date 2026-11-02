@@ -4,6 +4,7 @@ import github.jotagm.clube_livro.adapter.in.rest.dto.request.ComentarioAtualizar
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.ComentarioRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.ComentarioResponse;
 import github.jotagm.clube_livro.application.service.ComentarioService;
+import github.jotagm.clube_livro.application.service.FotoPerfilService;
 import github.jotagm.clube_livro.application.service.UsuarioService;
 import github.jotagm.clube_livro.domain.clube.leitura.Comentario;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
@@ -29,6 +30,7 @@ public class ComentarioController {
 
     private final ComentarioService comentarioService;
     private final UsuarioService usuarioService;
+    private final FotoPerfilService fotoPerfilService;
 
     @Operation(
             summary = "Cria um comentário em uma leitura",
@@ -45,7 +47,7 @@ public class ComentarioController {
         Comentario comentario = comentarioService.criar(leituraId, request, autor);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ComentarioResponse.deFolha(comentario));
+                .body(ComentarioResponse.deFolha(comentario, fotoPerfilService::urlDe));
     }
 
     @Operation(
@@ -60,7 +62,7 @@ public class ComentarioController {
         Usuario solicitante = usuarioService.buscarPorEmail(userDetails.getUsername());
         List<Comentario> comentarios = comentarioService.listarPorLeitura(leituraId, solicitante);
 
-        return ResponseEntity.ok(ComentarioResponse.montarArvore(comentarios));
+        return ResponseEntity.ok(ComentarioResponse.montarArvore(comentarios, fotoPerfilService::urlDe));
     }
 
     @Operation(summary = "Edita um comentário", description = "Restrito ao autor do comentário.")
@@ -74,7 +76,7 @@ public class ComentarioController {
         Usuario solicitante = usuarioService.buscarPorEmail(userDetails.getUsername());
         Comentario comentario = comentarioService.editar(id, request, solicitante);
 
-        return ResponseEntity.ok(ComentarioResponse.deFolha(comentario));
+        return ResponseEntity.ok(ComentarioResponse.deFolha(comentario, fotoPerfilService::urlDe));
     }
 
     @Operation(

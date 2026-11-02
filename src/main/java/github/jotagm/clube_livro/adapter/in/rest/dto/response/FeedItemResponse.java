@@ -18,6 +18,7 @@ public record FeedItemResponse(
         String clubeNome,
         Integer usuarioId,
         String usuarioNome,
+        String usuarioFotoUrl,
         boolean ehVoce,
         LocalDateTime quando,
         String livroTitulo,
