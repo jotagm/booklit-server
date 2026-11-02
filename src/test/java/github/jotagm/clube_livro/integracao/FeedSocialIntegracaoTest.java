@@ -100,6 +100,44 @@ class FeedSocialIntegracaoTest {
     }
 
     @Test
+    void reacaoNoComentarioApareceNaDiscussaoENoFeed() throws Exception {
+        String raiz = json.readTree(enviar(post("/leituras/" + leituraId + "/comentarios"), tokenLider,
+                "{\"conteudo\":\"Que capítulo!\"}", 201)).get("id").asText();
+        String resposta = json.readTree(enviar(post("/leituras/" + leituraId + "/comentarios"), tokenLider,
+                "{\"comentarioPaiId\":\"" + raiz + "\",\"conteudo\":\"né\"}", 201)).get("id").asText();
+        enviar(put("/reacoes"), tokenAna,
+                "{\"clubeId\":\"" + clubeId + "\",\"alvoId\":\"comentario:" + raiz + "\",\"tipo\":\"CURTIR\"}", 200);
+        enviar(put("/reacoes"), tokenAna,
+                "{\"clubeId\":\"" + clubeId + "\",\"alvoId\":\"comentario:" + resposta + "\",\"tipo\":\"CURTIR\"}", 200);
+
+        JsonNode discussao = json.readTree(mockMvc.perform(get("/leituras/" + leituraId + "/comentarios")
+                .header("Authorization", bearer(tokenAna))).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+
+        JsonNode comentario = discussao.get(0);
+        assertThat(comentario.get("reacoes").get("CURTIR").asLong()).isEqualTo(1);
+        assertThat(comentario.get("minhaReacao").asText()).isEqualTo("CURTIR");
+        assertThat(comentario.get("respostas").get(0).get("reacoes").get("CURTIR").asLong()).isEqualTo(1);
+        // A mesma reação vale no feed: o alvo é o mesmo.
+        assertThat(itens(feed(tokenLider), "COMENTARIO").get(0).get("reacoes").get("CURTIR").asLong()).isEqualTo(1);
+    }
+
+    @Test
+    void lendoAgoraDoPerfilDizEmQueClube() throws Exception {
+        enviar(put("/registros/leitura/" + leituraId), tokenAna, "{\"valorAtual\":30}", 200);
+
+        JsonNode perfil = json.readTree(mockMvc.perform(get("/usuarios/" + idAna + "/perfil")
+                .header("Authorization", bearer(tokenLider))).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+
+        JsonNode lendo = perfil.get("lendoAgora").get(0);
+        assertThat(lendo.get("titulo").asText()).isEqualTo("A Hora da Estrela");
+        assertThat(lendo.get("clubeId").asText()).isEqualTo(clubeId);
+        assertThat(lendo.get("clube").asText()).startsWith("Leitoras ");
+        assertThat(lendo.get("paginaAtual").asInt()).isEqualTo(30);
+    }
+
+    @Test
     void sugestaoDeLivroViraItemComLinkParaAVotacao() throws Exception {
         String votacaoId = json.readTree(enviar(post("/votacoes"), tokenLider, """
                 {"clubeId":"%s","dataAbertura":"%s","dataEncerramento":"%s"}

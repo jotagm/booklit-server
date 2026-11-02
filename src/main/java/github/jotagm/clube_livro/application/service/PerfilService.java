@@ -19,6 +19,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -35,6 +36,7 @@ public class PerfilService {
     private final LeituraPessoalRepository leituraPessoalRepository;
     private final MetaLeituraRepository metaLeituraRepository;
     private final FotoPerfilService fotoPerfilService;
+    private final EstanteService estanteService;
     private final Clock relogio;
 
     public Usuario atualizarPerfil(Usuario usuario, String nome, String bio) {
@@ -62,6 +64,13 @@ public class PerfilService {
             throw new RecursoNaoEncontradoException("Usuário não encontrado");
         }
 
+        // Só clubes que quem pede enxerga: o "com <clube>" do lendo agora não vaza clube alheio.
+        Map<UUID, String> nomesDosClubes = clubes.stream()
+                .collect(Collectors.toMap(ClubeEmComum::id, ClubeEmComum::nome, (a, b) -> a));
+
+        // O livro que o clube está lendo aparece no "lendo agora" mesmo antes da primeira página.
+        estanteService.garantirLivrosDosClubes(alvo);
+
         int ano = LocalDate.now(relogio).getYear();
         List<LeituraPessoal> lendo = leituraPessoalRepository
                 .findByUsuarioIdAndStatusOrderByUpdatedAtDesc(alvoId, StatusLeituraPessoal.LENDO);
@@ -79,7 +88,7 @@ public class PerfilService {
         return new PerfilResponse(
                 alvo.getId(), alvo.getNome(), alvo.getBio(), fotoPerfilService.urlDe(alvo), alvo.getCreatedAt(), ehVoce,
                 ano, lidosNoAno, meta, lidos.size(),
-                lendo.stream().map(LivroDoPerfil::from).toList(),
+                lendo.stream().map(l -> LivroDoPerfil.from(l, nomesDosClubes)).toList(),
                 lidos.stream().limit(MAX_LIDOS_RECENTES).map(LivroDoPerfil::from).toList(),
                 clubes);
     }

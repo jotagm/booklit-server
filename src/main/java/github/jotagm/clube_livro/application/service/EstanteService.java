@@ -2,8 +2,12 @@ package github.jotagm.clube_livro.application.service;
 
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.LeituraPessoalRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.EstanteResumoResponse;
+import github.jotagm.clube_livro.adapter.out.persistence.LeituraClubeRepository;
 import github.jotagm.clube_livro.adapter.out.persistence.LeituraPessoalRepository;
 import github.jotagm.clube_livro.adapter.out.persistence.MetaLeituraRepository;
+import github.jotagm.clube_livro.adapter.out.persistence.RegistroRepository;
+import github.jotagm.clube_livro.adapter.out.persistence.UsuarioClubeRepository;
+import github.jotagm.clube_livro.domain.clube.UsuarioClube;
 import github.jotagm.clube_livro.domain.clube.leitura.LeituraClube;
 import github.jotagm.clube_livro.domain.clube.leitura.TipoMeta;
 import github.jotagm.clube_livro.domain.estante.LeituraPessoal;
@@ -19,10 +23,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -32,9 +38,13 @@ public class EstanteService {
 
     private final LeituraPessoalRepository leituraPessoalRepository;
     private final MetaLeituraRepository metaLeituraRepository;
+    private final UsuarioClubeRepository usuarioClubeRepository;
+    private final LeituraClubeRepository leituraClubeRepository;
+    private final RegistroRepository registroRepository;
     private final Clock relogio;
 
     public List<LeituraPessoal> listar(Usuario usuario, StatusLeituraPessoal status) {
+        garantirLivrosDosClubes(usuario);
         return status == null
                 ? leituraPessoalRepository.findByUsuarioIdOrderByUpdatedAtDesc(usuario.getId())
                 : leituraPessoalRepository.findByUsuarioIdAndStatusOrderByUpdatedAtDesc(usuario.getId(), status);
@@ -84,6 +94,7 @@ public class EstanteService {
     }
 
     public EstanteResumoResponse resumo(Usuario usuario, int ano) {
+        garantirLivrosDosClubes(usuario);
         Integer meta = metaLeituraRepository.findByUsuarioIdAndAno(usuario.getId(), ano)
                 .map(MetaLeitura::getQuantidadeLivros)
                 .orElse(null);
@@ -137,6 +148,59 @@ public class EstanteService {
         } else if (leitura.getStatus() != StatusLeituraPessoal.LENDO) {
             leitura.mudarStatus(StatusLeituraPessoal.LENDO, hoje);
         }
+        leituraPessoalRepository.save(leitura);
+    }
+
+    /**
+     * O livro que o clube está lendo também é da pessoa: ele aparece na estante sem esperar o
+     * primeiro registro de página. A leitura em andamento entra (ou passa) para LENDO; a que o
+     * clube escolheu e ainda não começou (votação encerrada, sem meta e datas) entra como
+     * QUERO_LER. Nunca mexe no que a pessoa já marcou como lido ou abandonado.
+     *
+     * <p>Roda quando a estante (ou o perfil) é aberta, e não nos pontos em que a leitura nasce:
+     * assim cobre também quem entrou no clube depois, leituras completadas mais tarde e as que
+     * já existiam antes disto. É idempotente.
+     */
+    @Transactional
+    public void garantirLivrosDosClubes(Usuario usuario) {
+        LocalDateTime agora = LocalDateTime.now(relogio);
+        LocalDate hoje = hoje();
+        for (UsuarioClube uc : usuarioClubeRepository.findByUsuarioId(usuario.getId())) {
+            for (LeituraClube l : leituraClubeRepository.findByClubeIdOrderByDataInicioDesc(uc.getClube().getId())) {
+                if (l.getLivroGoogleId() == null) continue;
+                boolean semDatas = l.getDataInicio() == null || l.getDataFim() == null;
+                boolean emAndamento = !semDatas && !l.getDataInicio().isAfter(agora) && !l.getDataFim().isBefore(agora);
+                if (emAndamento) {
+                    garantirNaEstante(usuario, l, StatusLeituraPessoal.LENDO, hoje);
+                } else if (semDatas) {
+                    garantirNaEstante(usuario, l, StatusLeituraPessoal.QUERO_LER, hoje);
+                }
+            }
+        }
+    }
+
+    private void garantirNaEstante(Usuario usuario, LeituraClube l, StatusLeituraPessoal status, LocalDate hoje) {
+        boolean emPaginas = l.getTipoMeta() == TipoMeta.PAGINA && l.getValorMeta() > 0;
+        Optional<LeituraPessoal> existente = leituraPessoalRepository
+                .findByUsuarioIdAndLivroGoogleId(usuario.getId(), l.getLivroGoogleId());
+        LeituraPessoal leitura;
+        if (existente.isEmpty()) {
+            leitura = LeituraPessoal.adicionar(usuario, l.getLivroGoogleId(), l.getLivroTitulo(), l.getLivroAutor(),
+                    l.getLivroCapaUrl(), emPaginas ? l.getValorMeta() : null, status, hoje);
+            if (status == StatusLeituraPessoal.LENDO && emPaginas) {
+                registroRepository.findByLeituraClubeIdAndUsuarioId(l.getId(), usuario.getId())
+                        .filter(r -> r.getValorAtual() > 0 && r.getValorAtual() < l.getValorMeta())
+                        .ifPresent(r -> leitura.atualizarProgresso(r.getValorAtual(), null, hoje));
+            }
+        } else {
+            leitura = existente.get();
+            boolean subir = status == StatusLeituraPessoal.LENDO && leitura.getStatus() == StatusLeituraPessoal.QUERO_LER;
+            boolean vincular = leitura.getClubeOrigemId() == null
+                    && (leitura.getStatus() == StatusLeituraPessoal.QUERO_LER || leitura.getStatus() == StatusLeituraPessoal.LENDO);
+            if (!subir && !vincular) return;
+            if (subir) leitura.mudarStatus(StatusLeituraPessoal.LENDO, hoje);
+        }
+        leitura.vincularClube(l.getClube() != null ? l.getClube().getId() : null);
         leituraPessoalRepository.save(leitura);
     }
 

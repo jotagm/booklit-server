@@ -5,8 +5,10 @@ import github.jotagm.clube_livro.adapter.in.rest.dto.request.ComentarioRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.ComentarioResponse;
 import github.jotagm.clube_livro.application.service.ComentarioService;
 import github.jotagm.clube_livro.application.service.FotoPerfilService;
+import github.jotagm.clube_livro.application.service.ReacaoService;
 import github.jotagm.clube_livro.application.service.UsuarioService;
 import github.jotagm.clube_livro.domain.clube.leitura.Comentario;
+import github.jotagm.clube_livro.domain.feed.Reacao;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -21,6 +23,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -31,6 +34,7 @@ public class ComentarioController {
     private final ComentarioService comentarioService;
     private final UsuarioService usuarioService;
     private final FotoPerfilService fotoPerfilService;
+    private final ReacaoService reacaoService;
 
     @Operation(
             summary = "Cria um comentário em uma leitura",
@@ -61,8 +65,14 @@ public class ComentarioController {
                                                             @AuthenticationPrincipal UserDetails userDetails) {
         Usuario solicitante = usuarioService.buscarPorEmail(userDetails.getUsername());
         List<Comentario> comentarios = comentarioService.listarPorLeitura(leituraId, solicitante);
+        // Mesmo alvo do feed (comentario:<id>): reagir lá ou aqui é a mesma reação.
+        Map<String, List<Reacao>> reacoes = reacaoService.porAlvo(
+                comentarios.stream().map(ComentarioResponse::alvo).toList());
 
-        return ResponseEntity.ok(ComentarioResponse.montarArvore(comentarios, fotoPerfilService::urlDe));
+        return ResponseEntity.ok(ComentarioResponse.montarArvore(comentarios, fotoPerfilService::urlDe, c -> {
+            List<Reacao> deste = reacoes.getOrDefault(ComentarioResponse.alvo(c), List.of());
+            return new ComentarioResponse.Reacoes(ReacaoService.contar(deste), ReacaoService.minha(deste, solicitante.getId()));
+        }));
     }
 
     @Operation(summary = "Edita um comentário", description = "Restrito ao autor do comentário.")
