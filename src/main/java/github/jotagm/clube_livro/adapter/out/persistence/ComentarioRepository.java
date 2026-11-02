@@ -9,6 +9,9 @@ import java.util.UUID;
 public interface ComentarioRepository extends JpaRepository<Comentario, UUID> {
     List<Comentario> findByLeituraClubeIdOrderByCreatedAtAsc(UUID leituraClubeId);
 
+    /** Respostas das conversas que aparecem no feed. */
+    List<Comentario> findByComentarioPaiIdInAndRemovidoFalseOrderByCreatedAtAsc(java.util.Collection<UUID> paiIds);
+
     @org.springframework.data.jpa.repository.Query("""
             SELECT c FROM Comentario c
             WHERE c.leituraClube.clube.id IN :clubeIds AND c.removido = false

@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -42,6 +43,10 @@ public class OpcaoVoto {
     @Column(name = "livro_autor")
     String livroAutor;
 
+    /** Quando foi sugerida; vira item do feed. Nulo nas sugestões anteriores a esta coluna. */
+    @Column(name = "created_at")
+    LocalDateTime createdAt;
+
     public void definirAutor(String autor) {
         this.livroAutor = LeituraClube.normalizarAutor(autor);
     }
@@ -60,6 +65,7 @@ public class OpcaoVoto {
                 .livroGoogleId(livroGoogleId)
                 .livroTitulo(livroTitulo)
                 .livroCapaUrl(livroCapaUrl)
+                .createdAt(LocalDateTime.now())
                 .build();
     }
 }
