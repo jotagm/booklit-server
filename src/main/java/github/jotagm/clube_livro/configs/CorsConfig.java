@@ -37,7 +37,9 @@ public class CorsConfig {
 
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOriginPatterns(origens);
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // PATCH precisa estar aqui: o PATCH /usuarios/me/perfil (editar nome e bio) volta 403 sem ele,
+        // porque o nginx do front repassa o Origin e o Spring recusa o metodo fora da lista.
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         // O token vai no header Authorization, nunca em cookie: nao ha credencial a enviar.
         config.setAllowCredentials(false);
