@@ -4,5 +4,7 @@ package github.jotagm.clube_livro.domain.feed;
 public enum TipoReacao {
     CURTIR,
     FOGO,
-    PALMAS
+    PALMAS,
+    /** Boas-vindas a quem acabou de entrar no clube (item MEMBRO_ENTROU do feed). */
+    ACENO
 }

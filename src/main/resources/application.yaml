@@ -103,6 +103,12 @@ booklit:
       habilitado: ${BOOKLIT_CONVITE_EMAIL_HABILITADO:false}
       # Endereco do site; o link do e-mail leva a <front-url>/clubes.
       front-url: ${FRONT_URL:https://booklit.bio}
+  votacoes:
+    lembrete:
+      email:
+        # "Lembrar quem nao votou" (template lembrete-votacao do Client_GO, mesmo client-go.url/token
+        # e front-url do convite). Desligado, o lembrete e registrado mas nenhum e-mail sai.
+        habilitado: ${BOOKLIT_LEMBRETE_VOTACAO_EMAIL_HABILITADO:false}
 
 jwt:
   secret: ${JWT_SECRET}

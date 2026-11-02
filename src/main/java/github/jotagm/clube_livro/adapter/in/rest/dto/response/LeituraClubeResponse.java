@@ -17,7 +17,8 @@ public record LeituraClubeResponse(
         int valorMeta,
         LocalDateTime dataInicio,
         LocalDateTime dataFim,
-        String spotifyUrl
+        String spotifyUrl,
+        String livroAutor
 ) {
     public static LeituraClubeResponse from(LeituraClube leitura) {
         return new LeituraClubeResponse(
@@ -31,7 +32,8 @@ public record LeituraClubeResponse(
                 leitura.getValorMeta(),
                 leitura.getDataInicio(),
                 leitura.getDataFim(),
-                leitura.getSpotifyUrl()
+                leitura.getSpotifyUrl(),
+                leitura.getLivroAutor()
         );
     }
 }

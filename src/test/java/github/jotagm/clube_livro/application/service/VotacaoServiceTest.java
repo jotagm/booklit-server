@@ -39,7 +39,7 @@ class VotacaoServiceTest {
     private VotacaoService votacaoService;
 
     private Votacao votacaoExemplo(UUID id) {
-        return new Votacao(id, new Clube(), VotacaoStatus.ABERTA, LocalDateTime.now(), null);
+        return Votacao.builder().id(id).clube(new Clube()).status(VotacaoStatus.ABERTA).dataAbertura(LocalDateTime.now()).build();
     }
 
     @Test

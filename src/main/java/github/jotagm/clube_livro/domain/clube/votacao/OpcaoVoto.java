@@ -1,5 +1,7 @@
 package github.jotagm.clube_livro.domain.clube.votacao;
 
+import github.jotagm.clube_livro.domain.clube.leitura.LeituraClube;
+
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -35,6 +37,14 @@ public class OpcaoVoto {
 
     @Column(name = "livro_capa_url")
     String livroCapaUrl;
+
+    /** Vai para a leitura se este livro vencer. Opcional. */
+    @Column(name = "livro_autor")
+    String livroAutor;
+
+    public void definirAutor(String autor) {
+        this.livroAutor = LeituraClube.normalizarAutor(autor);
+    }
 
     public void trocarLivro(String livroGoogleId, String livroTitulo, String livroCapaUrl) {
         this.livroGoogleId = livroGoogleId;

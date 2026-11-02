@@ -83,8 +83,9 @@ public class FeedService {
         for (Comentario c : comentarioRepository.recentesDosClubes(clubes, pagina)) {
             LeituraClube l = c.getLeituraClube();
             brutos.add(new Bruto("comentario:" + c.getId(), TipoFeed.COMENTARIO, l.getClube(), c.getUsuario(),
-                    c.getCreatedAt(), l.getLivroTitulo(), l.getLivroCapaUrl(), null, null, null,
-                    trecho(c.getConteudo()), l.getId()));
+                    // valorAtual = onde o autor estava ao comentar ("· pág. 96" no card).
+                    c.getCreatedAt(), l.getLivroTitulo(), l.getLivroCapaUrl(), c.getPaginaAutor(), null,
+                    c.getPaginaAutor() == null ? null : unidade(l), trecho(c.getConteudo()), l.getId()));
         }
         for (LeituraClube l : leituraClubeRepository.recentesDosClubes(clubes, pagina)) {
             brutos.add(new Bruto("leitura:" + l.getId(), TipoFeed.LEITURA_INICIADA, l.getClube(), null,

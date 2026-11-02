@@ -73,7 +73,8 @@ public class VotacaoEncerramentoService {
                 votacao.getClube(),
                 vencedora.getLivroGoogleId(),
                 vencedora.getLivroTitulo(),
-                vencedora.getLivroCapaUrl()));
+                vencedora.getLivroCapaUrl(),
+                vencedora.getLivroAutor()));
 
         VotacaoEncerrada evento = votacao.encerrar(vencedora, salva.getId());
         votacaoService.atualizar(votacao);

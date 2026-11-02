@@ -53,8 +53,9 @@ class LeituraClubeServiceTest {
     private LeituraClubeService leituraClubeService;
 
     private LeituraClube leituraExemplo(UUID id) {
-        return new LeituraClube(id, null, "google-123", "Dom Casmurro", "url-capa",
-                TipoMeta.PAGINA, 300, LocalDateTime.now(), LocalDateTime.now().plusDays(30), null);
+        return LeituraClube.builder().id(id).clube(null).livroGoogleId("google-123").livroTitulo("Dom Casmurro")
+                .livroCapaUrl("url-capa").tipoMeta(TipoMeta.PAGINA).valorMeta(300)
+                .dataInicio(LocalDateTime.now()).dataFim(LocalDateTime.now().plusDays(30)).build();
     }
 
     @Test
@@ -103,8 +104,9 @@ class LeituraClubeServiceTest {
     }
 
     private LeituraClube leituraDoClube(UUID id, Clube clube) {
-        return new LeituraClube(id, clube, "google-123", "Dom Casmurro", "url-capa",
-                TipoMeta.PAGINA, 300, LocalDateTime.now(), LocalDateTime.now().plusDays(30), null);
+        return LeituraClube.builder().id(id).clube(clube).livroGoogleId("google-123").livroTitulo("Dom Casmurro")
+                .livroCapaUrl("url-capa").tipoMeta(TipoMeta.PAGINA).valorMeta(300)
+                .dataInicio(LocalDateTime.now()).dataFim(LocalDateTime.now().plusDays(30)).build();
     }
 
     @Test
@@ -147,6 +149,37 @@ class LeituraClubeServiceTest {
 
         assertThat(resultado.getLivroTitulo()).isEqualTo("Memórias Póstumas");
         verify(leituraClubeRepository).save(leitura);
+    }
+
+    @Test
+    void atualizar_semAutorMantemOAutorQuandoOLivroEhOMesmo() {
+        UUID id = UUID.randomUUID();
+        LeituraClube leitura = leituraDoClube(id, Clube.builder().id(UUID.randomUUID()).build());
+        leitura.definirAutor("Machado de Assis");
+        // Completar a leitura que veio da votação: mesmo livro, corpo sem autor.
+        LeituraClubeRequest request = new LeituraClubeRequest(
+                UUID.randomUUID(), "google-123", "Dom Casmurro", "url-capa",
+                TipoMeta.PAGINA, 300, LocalDateTime.now(), LocalDateTime.now().plusDays(30), null);
+
+        when(leituraClubeRepository.findById(id)).thenReturn(Optional.of(leitura));
+        when(leituraClubeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThat(leituraClubeService.atualizar(id, request).getLivroAutor()).isEqualTo("Machado de Assis");
+    }
+
+    @Test
+    void atualizar_trocarDeLivroSemAutorLimpaOAntigo() {
+        UUID id = UUID.randomUUID();
+        LeituraClube leitura = leituraDoClube(id, Clube.builder().id(UUID.randomUUID()).build());
+        leitura.definirAutor("Machado de Assis");
+        LeituraClubeRequest request = new LeituraClubeRequest(
+                UUID.randomUUID(), "google-456", "Vidas Secas", "url-capa",
+                TipoMeta.PAGINA, 200, LocalDateTime.now(), LocalDateTime.now().plusDays(30), null);
+
+        when(leituraClubeRepository.findById(id)).thenReturn(Optional.of(leitura));
+        when(leituraClubeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThat(leituraClubeService.atualizar(id, request).getLivroAutor()).isNull();
     }
 
     @Test

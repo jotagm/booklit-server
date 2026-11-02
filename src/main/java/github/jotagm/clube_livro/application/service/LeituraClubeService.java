@@ -18,6 +18,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Objects;
 import java.util.UUID;
 
 @Slf4j
@@ -48,6 +49,7 @@ public class LeituraClubeService {
                 request.dataInicio(),
                 request.dataFim());
         leitura.definirSpotify(request.spotifyUrl());
+        leitura.definirAutor(request.livroAutor());
 
         LeituraClube leituraSalva = leituraClubeRepository.save(leitura);
 
@@ -110,6 +112,7 @@ public class LeituraClubeService {
         validarIntervalo(request);
 
         LeituraClube leitura = buscarPorId(id);
+        boolean mesmoLivro = Objects.equals(leitura.getLivroGoogleId(), request.livroGoogleId());
         leitura.redefinir(
                 request.livroGoogleId(),
                 request.livroTitulo(),
@@ -119,6 +122,11 @@ public class LeituraClubeService {
                 request.dataInicio(),
                 request.dataFim());
         leitura.definirSpotify(request.spotifyUrl());
+        // Completar a leitura que veio da votação não manda o autor: mantém o da opção vencedora.
+        // Trocar de livro sem autor limpa o antigo, que seria de outro livro.
+        if (request.livroAutor() != null || !mesmoLivro) {
+            leitura.definirAutor(request.livroAutor());
+        }
         LeituraClube salva = leituraClubeRepository.save(leitura);
         // A leitura vencedora de uma votação nasce sem meta/datas e sem registros; os
         // registros só eram criados pelo consumidor do evento VotacaoEncerrada, que fica

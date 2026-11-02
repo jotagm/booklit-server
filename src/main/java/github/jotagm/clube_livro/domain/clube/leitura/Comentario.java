@@ -36,6 +36,13 @@ public class Comentario {
 
     String conteudo;
 
+    /**
+     * Onde o autor estava na leitura (na unidade da meta) quando escreveu. O front usa para
+     * esconder spoiler de quem ainda não chegou lá. Nulo em comentários anteriores a isto.
+     */
+    @Column(name = "pagina_autor")
+    Integer paginaAutor;
+
     boolean removido;
 
     @Column(name = "created_at")

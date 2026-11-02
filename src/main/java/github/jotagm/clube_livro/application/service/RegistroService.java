@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -39,6 +40,12 @@ public class RegistroService {
 
     public boolean existe(UUID leituraClubeId, Integer usuarioId) {
         return registroRepository.findByLeituraClubeIdAndUsuarioId(leituraClubeId, usuarioId).isPresent();
+    }
+
+    /** Onde o usuário está na leitura; vazio se ele não tem registro nela. */
+    public Optional<Integer> progressoDe(UUID leituraClubeId, Integer usuarioId) {
+        return registroRepository.findByLeituraClubeIdAndUsuarioId(leituraClubeId, usuarioId)
+                .map(Registro::getValorAtual);
     }
 
     public Registro buscarPorLeituraEUsuario(UUID leituraClubeId, Integer usuarioId) {

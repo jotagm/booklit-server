@@ -3,8 +3,11 @@ package github.jotagm.clube_livro.adapter.in.rest;
 import github.jotagm.clube_livro.configs.RequireMembro;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.VotacaoRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.LeituraClubeResponse;
+import github.jotagm.clube_livro.adapter.in.rest.dto.response.LembreteVotacaoResponse;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.VotacaoResponse;
+import github.jotagm.clube_livro.application.service.LembreteDeVotacaoService;
 import github.jotagm.clube_livro.application.service.VotacaoEncerramentoService;
+import github.jotagm.clube_livro.configs.AutorizacaoClube;
 import github.jotagm.clube_livro.application.service.VotacaoService;
 import github.jotagm.clube_livro.configs.RequireLider;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,6 +31,8 @@ public class VotacaoController {
 
     private final VotacaoService votacaoService;
     private final VotacaoEncerramentoService votacaoEncerramentoService;
+    private final LembreteDeVotacaoService lembreteDeVotacaoService;
+    private final AutorizacaoClube autorizacaoClube;
 
     @Operation(
             summary = "Abre uma votação no clube",
@@ -100,5 +105,24 @@ public class VotacaoController {
     @RequireLider("@votacaoService.buscarPorId(#id).clube.id")
     public ResponseEntity<LeituraClubeResponse> encerrarVotacao(@PathVariable UUID id) {
         return ResponseEntity.ok(LeituraClubeResponse.from(votacaoEncerramentoService.finalizarVotacao(id)));
+    }
+
+    @Operation(
+            summary = "Lembra por e-mail quem ainda não votou",
+            description = """
+                    Restrito ao LIDER do clube e a votações ABERTAS. Cada membro sem voto (exceto o líder)
+                    recebe um e-mail com o link da votação. No máximo um lembrete a cada 24 horas por votação;
+                    o momento do último fica em `ultimoLembreteEm` da votação.
+                    """)
+    @ApiResponse(responseCode = "200", description = "Lembrete registrado; `notificados` diz quantos membros receberam")
+    @ApiResponse(responseCode = "403", description = "O usuário autenticado não é líder do clube")
+    @ApiResponse(responseCode = "404", description = "Votação não encontrada")
+    @ApiResponse(responseCode = "422", description = "Votação encerrada, lembrete nas últimas 24 horas ou todos já votaram")
+    @PostMapping("{id}/lembrete")
+    @RequireLider("@votacaoService.buscarPorId(#id).clube.id")
+    public ResponseEntity<LembreteVotacaoResponse> lembrar(@Parameter(description = "Id da votação") @PathVariable UUID id) {
+        LembreteDeVotacaoService.Resultado r =
+                lembreteDeVotacaoService.lembrarQuemNaoVotou(id, autorizacaoClube.usuarioAutenticado());
+        return ResponseEntity.ok(new LembreteVotacaoResponse(r.notificados(), r.lembradoEm()));
     }
 }

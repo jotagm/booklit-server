@@ -51,6 +51,7 @@ public class OpcaoVotoController {
                 request.livroGoogleId(),
                 request.livroTitulo(),
                 request.livroCapaUrl());
+        opcaoVoto.definirAutor(request.livroAutor());
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(OpcaoVotoResponse.from(opcaoVotoService.salvar(opcaoVoto)));
@@ -104,6 +105,7 @@ public class OpcaoVotoController {
         OpcaoVoto opcaoVoto = opcaoVotoService.buscarPorId(id);
         exigirAutorOuLider(opcaoVoto);
         opcaoVoto.trocarLivro(request.livroGoogleId(), request.livroTitulo(), request.livroCapaUrl());
+        opcaoVoto.definirAutor(request.livroAutor());
 
         return ResponseEntity.ok(OpcaoVotoResponse.from(opcaoVotoService.atualizar(opcaoVoto)));
     }

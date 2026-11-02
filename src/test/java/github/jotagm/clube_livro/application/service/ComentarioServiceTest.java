@@ -38,6 +38,9 @@ class ComentarioServiceTest {
     @Mock
     private UsuarioClubeService usuarioClubeService;
 
+    @Mock
+    private RegistroService registroService;
+
     @Spy private Clock relogio = new RelogioDeTeste();
 
     @InjectMocks
@@ -87,6 +90,37 @@ class ComentarioServiceTest {
 
         assertThat(resultado.getConteudo()).isEqualTo("Ótimo capítulo");
         assertThat(resultado.getComentarioPai()).isNull();
+    }
+
+    @Test
+    void criar_gravaOndeOAutorEstavaNaLeitura() {
+        UUID clubeId = UUID.randomUUID();
+        Usuario autor = usuarioExemplo();
+        LeituraClube leitura = leituraExemplo(clubeId);
+
+        when(leituraClubeService.buscarPorId(leitura.getId())).thenReturn(leitura);
+        when(usuarioClubeService.isMembro(autor.getId(), clubeId)).thenReturn(true);
+        when(registroService.progressoDe(leitura.getId(), autor.getId())).thenReturn(java.util.Optional.of(96));
+        when(comentarioRepository.save(any(Comentario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Comentario resultado = comentarioService.criar(leitura.getId(), new ComentarioRequest(null, "A cena da faca!"), autor);
+
+        assertThat(resultado.getPaginaAutor()).isEqualTo(96);
+    }
+
+    @Test
+    void criar_semRegistroDeixaPaginaNula() {
+        UUID clubeId = UUID.randomUUID();
+        Usuario autor = usuarioExemplo();
+        LeituraClube leitura = leituraExemplo(clubeId);
+
+        when(leituraClubeService.buscarPorId(leitura.getId())).thenReturn(leitura);
+        when(usuarioClubeService.isMembro(autor.getId(), clubeId)).thenReturn(true);
+        when(registroService.progressoDe(leitura.getId(), autor.getId())).thenReturn(java.util.Optional.empty());
+        when(comentarioRepository.save(any(Comentario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThat(comentarioService.criar(leitura.getId(), new ComentarioRequest(null, "oi"), autor).getPaginaAutor())
+                .isNull();
     }
 
     @Test

@@ -30,6 +30,10 @@ public class LeituraClube {
     @Column(name = "livro_capa_url")
     String livroCapaUrl;
 
+    /** Autor(es) como o catálogo devolve ("Clarice Lispector"); opcional. */
+    @Column(name = "livro_autor")
+    String livroAutor;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_meta")
     TipoMeta tipoMeta;
@@ -46,6 +50,18 @@ public class LeituraClube {
     /** Playlist/álbum/podcast/audiobook do Spotify da leitura — ver {@link LinkSpotify}. */
     @Column(name = "spotify_url")
     String spotifyUrl;
+
+    public void definirAutor(String autor) {
+        this.livroAutor = normalizarAutor(autor);
+    }
+
+    /** Vazio vira nulo; texto livre do catálogo, então perde quebras de linha e ganha teto. */
+    public static String normalizarAutor(String autor) {
+        if (autor == null) return null;
+        String limpo = autor.replaceAll("\\s+", " ").strip();
+        if (limpo.isEmpty()) return null;
+        return limpo.length() > 255 ? limpo.substring(0, 255).strip() : limpo;
+    }
 
     public void definirSpotify(String url) {
         this.spotifyUrl = LinkSpotify.normalizar(url);
@@ -80,11 +96,17 @@ public class LeituraClube {
 
     public static LeituraClube doLivroVencedor(Clube clube, String livroGoogleId,
                                                String livroTitulo, String livroCapaUrl) {
+        return doLivroVencedor(clube, livroGoogleId, livroTitulo, livroCapaUrl, null);
+    }
+
+    public static LeituraClube doLivroVencedor(Clube clube, String livroGoogleId,
+                                               String livroTitulo, String livroCapaUrl, String livroAutor) {
         return LeituraClube.builder()
                 .clube(clube)
                 .livroGoogleId(livroGoogleId)
                 .livroTitulo(livroTitulo)
                 .livroCapaUrl(livroCapaUrl)
+                .livroAutor(normalizarAutor(livroAutor))
                 .build();
     }
 }

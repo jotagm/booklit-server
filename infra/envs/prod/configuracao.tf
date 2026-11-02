@@ -26,6 +26,8 @@ locals {
       BOOKLIT_FOTOS_BUCKET = aws_s3_bucket.fotos.bucket
       # Aviso por e-mail de convite de clube, pelo Client_GO (template convite-clube).
       BOOKLIT_CONVITE_EMAIL_HABILITADO = tostring(var.convite_email_habilitado)
+      # "Lembrar quem não votou", pelo Client_GO (template lembrete-votacao).
+      BOOKLIT_LEMBRETE_VOTACAO_EMAIL_HABILITADO = tostring(var.lembrete_votacao_email_habilitado)
     },
     # O SSM não aceita valor vazio: variável vazia simplesmente não vai para o container.
     var.api_dominio == "" ? {} : { API_DOMINIO = var.api_dominio },

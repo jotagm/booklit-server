@@ -24,6 +24,7 @@ public class ComentarioService {
     private final ComentarioRepository comentarioRepository;
     private final LeituraClubeService leituraClubeService;
     private final UsuarioClubeService usuarioClubeService;
+    private final RegistroService registroService;
     private final Clock relogio;
 
     public Comentario criar(UUID leituraClubeId, ComentarioRequest request, Usuario autor) {
@@ -43,6 +44,8 @@ public class ComentarioService {
                 .usuario(autor)
                 .comentarioPai(comentarioPai)
                 .conteudo(request.conteudo())
+                // Onde o autor estava ao escrever: quem ainda não chegou lá vê o texto borrado.
+                .paginaAutor(registroService.progressoDe(leitura.getId(), autor.getId()).orElse(null))
                 .removido(false)
                 .createdAt(LocalDateTime.now(relogio))
                 .build();

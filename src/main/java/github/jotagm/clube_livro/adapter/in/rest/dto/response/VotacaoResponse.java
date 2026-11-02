@@ -12,7 +12,9 @@ public record VotacaoResponse(
         String nomeClube,
         VotacaoStatus status,
         LocalDateTime dataAbertura,
-        LocalDateTime dataEncerramento
+        LocalDateTime dataEncerramento,
+        /** Último lembrete do líder a quem não votou; o front desliga o "lembrar" por 24h. */
+        LocalDateTime ultimoLembreteEm
 ) {
     public static VotacaoResponse from(Votacao votacao) {
         return new VotacaoResponse(
@@ -21,7 +23,8 @@ public record VotacaoResponse(
                 votacao.getClube().getNome(),
                 votacao.getStatus(),
                 votacao.getDataAbertura(),
-                votacao.getDataEncerramento()
+                votacao.getDataEncerramento(),
+                votacao.getUltimoLembreteEm()
         );
     }
 }

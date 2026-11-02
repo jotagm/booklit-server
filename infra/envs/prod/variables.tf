@@ -100,6 +100,12 @@ variable "convite_email_habilitado" {
   default     = false
 }
 
+variable "lembrete_votacao_email_habilitado" {
+  description = "Envia por e-mail o lembrete de votação que o líder dispara (via Client_GO). Só depois do template lembrete-votacao publicado no Client_GO"
+  type        = bool
+  default     = false
+}
+
 variable "login_exige_codigo" {
   description = "Login em duas etapas (senha + código por e-mail). Só depois do acesso de produção do SES"
   type        = bool

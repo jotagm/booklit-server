@@ -38,5 +38,17 @@ public record LeituraClubeRequest(
 
         /** Opcional: link do Spotify (playlist, álbum, podcast ou audiobook). Vazio remove. */
         @Size(max = 300)
-        String spotifyUrl
-) {}
+        String spotifyUrl,
+
+        /** Opcional: autor(es) do livro, como o catálogo devolve. */
+        @Size(max = 255)
+        String livroAutor
+) {
+    /** Clientes antigos (sem autor). */
+    public LeituraClubeRequest(UUID clubeId, String livroGoogleId, String livroTitulo, String livroCapaUrl,
+                               TipoMeta tipoMeta, int valorMeta, LocalDateTime dataInicio,
+                               LocalDateTime dataFim, String spotifyUrl) {
+        this(clubeId, livroGoogleId, livroTitulo, livroCapaUrl, tipoMeta, valorMeta, dataInicio, dataFim,
+                spotifyUrl, null);
+    }
+}

@@ -18,6 +18,8 @@ public record ComentarioResponse(
         String usuarioFotoUrl,
         String conteudo,
         boolean removido,
+        /** Página (ou capítulo) do autor ao comentar; nulo em comentários antigos ou removidos. */
+        Integer paginaAutor,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         List<ComentarioResponse> respostas
@@ -58,6 +60,7 @@ public record ComentarioResponse(
                 foto.apply(comentario.getUsuario()),
                 comentario.isRemovido() ? "[comentário removido]" : comentario.getConteudo(),
                 comentario.isRemovido(),
+                comentario.isRemovido() ? null : comentario.getPaginaAutor(),
                 comentario.getCreatedAt(),
                 comentario.getUpdatedAt(),
                 respostas
