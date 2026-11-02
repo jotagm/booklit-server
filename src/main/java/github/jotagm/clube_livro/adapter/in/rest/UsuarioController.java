@@ -92,7 +92,9 @@ public class UsuarioController {
             @Parameter(description = "Id do usuário") @PathVariable Integer id,
             @RequestBody @Valid UsuarioRequest request) {
         autorizacaoClube.exigirProprioUsuario(id);
-        return ResponseEntity.ok(UsuarioResponse.from(usuarioService.atualizar(id, request)));
+        Usuario atualizado = usuarioService.atualizar(id, request);
+        // O site guarda esta resposta como o usuário da sessão: sem a URL da foto ela sumiria da tela.
+        return ResponseEntity.ok(UsuarioResponse.from(atualizado, fotoPerfilService.urlDe(atualizado)));
     }
 
     @Operation(summary = "Edita o próprio perfil", description = "Nome e bio (até 160 caracteres). Não exige senha nem invalida o token.")
