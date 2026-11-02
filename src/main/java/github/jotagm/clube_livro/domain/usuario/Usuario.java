@@ -36,10 +36,13 @@ public class Usuario {
     /** Só a chave do objeto no S3: a imagem nunca passa pelo banco nem pela API. */
     @Column(name = "foto_chave", length = 200)
     String fotoChave;
+    /** Lembretes por e-mail ("lembrar quem não votou"). Nulo = nunca mexeu = recebe. */
+    @Column(name = "receber_lembretes")
+    Boolean receberLembretes;
 
     /** Construtor sem bio: é o que o cadastro e os testes sempre usaram. */
     public Usuario(Integer id, String nome, String email, String senhaHash, LocalDateTime createdAt) {
-        this(id, nome, email, senhaHash, createdAt, null, null, null);
+        this(id, nome, email, senhaHash, createdAt, null, null, null, null);
     }
 
     public void atualizarDados(String nome, String email) {
@@ -59,6 +62,14 @@ public class Usuario {
 
     public void removerFoto() {
         this.fotoChave = null;
+    }
+
+    public boolean recebeLembretes() {
+        return !Boolean.FALSE.equals(receberLembretes);
+    }
+
+    public void definirReceberLembretes(boolean receber) {
+        this.receberLembretes = receber;
     }
 
     public boolean emailVerificado() {

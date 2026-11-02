@@ -20,6 +20,7 @@ public class RegistroService {
 
     private final RegistroRepository registroRepository;
     private final EstanteService estanteService;
+    private final SequenciaDeLeituraService sequenciaDeLeituraService;
 
     public Registro salvar(Registro registro) {
         return registroRepository.save(registro);
@@ -67,6 +68,7 @@ public class RegistroService {
 
         registro.registrarProgresso(novoValor);
         Registro salvo = registroRepository.save(registro);
+        if (novoValor > 0) sequenciaDeLeituraService.registrarHoje(usuarioId);
         try {
             estanteService.sincronizarProgressoDoClube(registro.getUsuario(), registro.getLeituraClube(), novoValor);
         } catch (RuntimeException e) {

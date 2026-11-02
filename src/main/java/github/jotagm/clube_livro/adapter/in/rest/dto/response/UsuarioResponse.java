@@ -12,7 +12,9 @@ public record UsuarioResponse(
         LocalDateTime createdAt,
         boolean emailVerificado,
         /** URL assinada de curta duração; nula sem foto. */
-        String fotoUrl
+        String fotoUrl,
+        /** Preferência da tela de configurações: lembretes por e-mail. */
+        boolean receberLembretes
 ) {
     public static UsuarioResponse from(Usuario usuario) {
         return from(usuario, null);
@@ -26,7 +28,8 @@ public record UsuarioResponse(
                 usuario.getBio(),
                 usuario.getCreatedAt(),
                 usuario.emailVerificado(),
-                fotoUrl
+                fotoUrl,
+                usuario.recebeLembretes()
         );
     }
 }

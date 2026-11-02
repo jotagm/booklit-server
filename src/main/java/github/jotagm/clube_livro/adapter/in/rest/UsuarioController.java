@@ -3,12 +3,15 @@ package github.jotagm.clube_livro.adapter.in.rest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.FotoConfirmacaoRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.FotoEnvioRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.PerfilRequest;
+import github.jotagm.clube_livro.adapter.in.rest.dto.request.PreferenciasRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.UsuarioRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.FotoEnvioResponse;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.PerfilResponse;
+import github.jotagm.clube_livro.adapter.in.rest.dto.response.SequenciaResponse;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.UsuarioResponse;
 import github.jotagm.clube_livro.application.service.FotoPerfilService;
 import github.jotagm.clube_livro.application.service.PerfilService;
+import github.jotagm.clube_livro.application.service.SequenciaDeLeituraService;
 import github.jotagm.clube_livro.application.service.UsuarioService;
 import github.jotagm.clube_livro.configs.AutorizacaoClube;
 import github.jotagm.clube_livro.domain.exceptions.AcessoNegadoException;
@@ -36,6 +39,7 @@ public class UsuarioController {
     private final PerfilService perfilService;
     private final FotoPerfilService fotoPerfilService;
     private final AutorizacaoClube autorizacaoClube;
+    private final SequenciaDeLeituraService sequenciaDeLeituraService;
 
     @Operation(
             summary = "Cria um usuário",
@@ -137,6 +141,28 @@ public class UsuarioController {
     public ResponseEntity<UsuarioResponse> removerFoto() {
         Usuario atualizado = fotoPerfilService.remover(autorizacaoClube.usuarioAutenticado());
         return ResponseEntity.ok(UsuarioResponse.from(atualizado));
+    }
+
+    @Operation(
+            summary = "Preferências do usuário autenticado",
+            description = "Hoje só os lembretes por e-mail (\"lembrar quem não votou\"). Quem desliga continua contando como lembrado, mas não recebe o e-mail.")
+    @ApiResponse(responseCode = "200", description = "Preferências salvas")
+    @PatchMapping("/me/preferencias")
+    public ResponseEntity<UsuarioResponse> preferencias(@RequestBody @Valid PreferenciasRequest request) {
+        Usuario atualizado = usuarioService.definirReceberLembretes(
+                autorizacaoClube.usuarioAutenticado(), request.receberLembretes());
+        return ResponseEntity.ok(UsuarioResponse.from(atualizado, fotoPerfilService.urlDe(atualizado)));
+    }
+
+    @Operation(
+            summary = "Sequência de semanas de leitura",
+            description = "Quantas semanas seguidas o usuário autenticado registrou progresso (no clube ou na estante). Uma semana atual ainda sem leitura não quebra a sequência.")
+    @ApiResponse(responseCode = "200", description = "Sequência")
+    @GetMapping("/me/sequencia")
+    public ResponseEntity<SequenciaResponse> sequencia() {
+        Integer id = autorizacaoClube.usuarioAutenticado().getId();
+        return ResponseEntity.ok(new SequenciaResponse(
+                sequenciaDeLeituraService.semanasSeguidas(id), sequenciaDeLeituraService.leuHoje(id)));
     }
 
     @Operation(

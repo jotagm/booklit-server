@@ -102,6 +102,22 @@ class LembreteDeVotacaoServiceTest {
     }
 
     @Test
+    void quemDesligouOsLembretesNaoRecebeEmail() {
+        when(votoService.listarPorVotacao(votacao.getId())).thenReturn(List.of(votoDe(ana)));
+        carla.definirReceberLembretes(false);
+
+        LembreteDeVotacaoService.Resultado r = service.lembrarQuemNaoVotou(votacao.getId(), lider);
+
+        ArgumentCaptor<EnviadorDeLembreteDeVotacao.Mensagem> mensagens =
+                ArgumentCaptor.forClass(EnviadorDeLembreteDeVotacao.Mensagem.class);
+        verify(enviador, times(1)).enviar(mensagens.capture());
+        assertThat(mensagens.getValue().destinatario()).isEqualTo("bruno@teste.dev");
+        assertThat(r.notificados()).isEqualTo(1);
+        // O lembrete conta mesmo assim: o líder não pode reenviar no mesmo dia.
+        assertThat(votacao.getUltimoLembreteEm()).isNotNull();
+    }
+
+    @Test
     void todosVotaramNaoRegistraLembrete() {
         when(votoService.listarPorVotacao(votacao.getId()))
                 .thenReturn(List.of(votoDe(ana), votoDe(bruno), votoDe(carla)));

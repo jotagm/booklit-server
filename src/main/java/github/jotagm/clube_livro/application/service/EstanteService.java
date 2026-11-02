@@ -41,6 +41,7 @@ public class EstanteService {
     private final UsuarioClubeRepository usuarioClubeRepository;
     private final LeituraClubeRepository leituraClubeRepository;
     private final RegistroRepository registroRepository;
+    private final SequenciaDeLeituraService sequenciaDeLeituraService;
     private final Clock relogio;
 
     public List<LeituraPessoal> listar(Usuario usuario, StatusLeituraPessoal status) {
@@ -80,7 +81,9 @@ public class EstanteService {
     public LeituraPessoal atualizarProgresso(UUID id, Usuario usuario, int pagina, Integer totalPaginas) {
         LeituraPessoal leitura = buscar(id, usuario);
         leitura.atualizarProgresso(pagina, totalPaginas, hoje());
-        return leituraPessoalRepository.save(leitura);
+        LeituraPessoal salva = leituraPessoalRepository.save(leitura);
+        if (pagina > 0) sequenciaDeLeituraService.registrarHoje(usuario.getId());
+        return salva;
     }
 
     public LeituraPessoal avaliar(UUID id, Usuario usuario, Integer nota, String resenha) {

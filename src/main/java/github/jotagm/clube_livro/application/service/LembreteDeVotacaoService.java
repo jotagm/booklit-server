@@ -51,12 +51,14 @@ public class LembreteDeVotacaoService {
         if (faltam.isEmpty()) {
             throw new RegraDeNegocioException("Todos os membros já votaram");
         }
+        // Quem desligou os lembretes nas configurações conta como lembrado, mas não recebe e-mail.
+        List<Usuario> destinatarios = faltam.stream().filter(Usuario::recebeLembretes).toList();
 
         LocalDateTime agora = LocalDateTime.now(relogio);
         votacao.registrarLembrete(agora);
         votacaoService.atualizar(votacao);
 
-        for (Usuario membro : faltam) {
+        for (Usuario membro : destinatarios) {
             enviador.enviar(new EnviadorDeLembreteDeVotacao.Mensagem(
                     votacao.getId() + ":" + membro.getId() + ":" + agora,
                     votacao.getId(),
@@ -65,7 +67,8 @@ public class LembreteDeVotacaoService {
                     votacao.getDataEncerramento()));
         }
 
-        log.info("Lembrete de votação votacao={} notificados={}", votacao.getId(), faltam.size());
-        return new Resultado(faltam.size(), agora);
+        log.info("Lembrete de votação votacao={} faltam={} notificados={}",
+                votacao.getId(), faltam.size(), destinatarios.size());
+        return new Resultado(destinatarios.size(), agora);
     }
 }

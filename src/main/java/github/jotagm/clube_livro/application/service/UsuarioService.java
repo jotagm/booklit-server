@@ -55,6 +55,11 @@ public class UsuarioService implements UserDetailsService {
         return usuarioRepository.save(usuario);
     }
 
+    public Usuario definirReceberLembretes(Usuario usuario, boolean receber) {
+        usuario.definirReceberLembretes(receber);
+        return usuarioRepository.save(usuario);
+    }
+
     /** Sobrecarga mantida para quem já tem a entidade em mãos. */
     public Usuario atualizar(Usuario usuario) {
         usuario.definirSenhaHash(passwordEncoder.encode(usuario.getSenhaHash()));

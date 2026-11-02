@@ -199,6 +199,39 @@ class FeedSocialIntegracaoTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void progressoNoClubeAcendeASequenciaDeSemanas() throws Exception {
+        JsonNode antes = json.readTree(mockMvc.perform(get("/usuarios/me/sequencia").header("Authorization", bearer(tokenAna)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(antes.get("semanas").asInt()).isZero();
+        assertThat(antes.get("leuHoje").asBoolean()).isFalse();
+
+        enviar(put("/registros/leitura/" + leituraId), tokenAna, "{\"valorAtual\":12}", 200);
+        enviar(put("/registros/leitura/" + leituraId), tokenAna, "{\"valorAtual\":20}", 200);
+
+        JsonNode depois = json.readTree(mockMvc.perform(get("/usuarios/me/sequencia").header("Authorization", bearer(tokenAna)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(depois.get("semanas").asInt()).isEqualTo(1);
+        assertThat(depois.get("leuHoje").asBoolean()).isTrue();
+    }
+
+    @Test
+    void preferenciaDeLembretesVaiEVoltaPeloUsuario() throws Exception {
+        JsonNode eu = json.readTree(mockMvc.perform(get("/usuarios/me").header("Authorization", bearer(tokenAna)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(eu.get("receberLembretes").asBoolean()).isTrue();
+
+        JsonNode salvo = json.readTree(enviar(patch("/usuarios/me/preferencias"), tokenAna,
+                "{\"receberLembretes\":false}", 200));
+        assertThat(salvo.get("receberLembretes").asBoolean()).isFalse();
+
+        eu = json.readTree(mockMvc.perform(get("/usuarios/me").header("Authorization", bearer(tokenAna)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(eu.get("receberLembretes").asBoolean()).isFalse();
+
+        enviar(patch("/usuarios/me/preferencias"), tokenAna, "{}", 400);
+    }
+
     /** Id do único clube com novidade, ou null se não houver nenhum. */
     private String novidades(String token) throws Exception {
         JsonNode lista = json.readTree(mockMvc.perform(get("/feed/novidades").header("Authorization", bearer(token)))

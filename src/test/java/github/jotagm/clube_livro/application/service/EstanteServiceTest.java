@@ -44,6 +44,7 @@ class EstanteServiceTest {
     @Mock private UsuarioClubeRepository usuarioClubeRepository;
     @Mock private LeituraClubeRepository leituraClubeRepository;
     @Mock private RegistroRepository registroRepository;
+    @Mock private SequenciaDeLeituraService sequenciaDeLeituraService;
     @Spy private Clock relogio = new RelogioDeTeste();
 
     @InjectMocks private EstanteService estanteService;
