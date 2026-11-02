@@ -65,6 +65,10 @@ booklit:
         # Mesmo valor de um dos AVISO_TOKENS do Client_GO (32+ caracteres).
         token: ${BOOKLIT_CLIENT_GO_TOKEN:}
         timeout: ${BOOKLIT_CLIENT_GO_TIMEOUT:2s}
+  fotos:
+    # Bucket S3 privado das fotos de perfil. Vazio = fotos desligadas (endpoints respondem 503).
+    bucket: ${BOOKLIT_FOTOS_BUCKET:}
+    tamanho-maximo: ${BOOKLIT_FOTOS_TAMANHO_MAXIMO:2097152}
   convites:
     email:
       # Avisa por e-mail quem foi convidado para um clube (template convite-clube do Client_GO,

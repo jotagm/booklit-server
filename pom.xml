@@ -112,6 +112,10 @@
 			<groupId>software.amazon.awssdk</groupId>
 			<artifactId>sesv2</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+		</dependency>
 		<!-- Núcleo de autenticação (./auth-core, sem Spring). Antes do build: mvn -f auth-core install -->
 		<dependency>
 			<groupId>github.jotagm</groupId>

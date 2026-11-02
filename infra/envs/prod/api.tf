@@ -76,6 +76,12 @@ resource "aws_iam_role_policy" "api" {
         Resource = ["arn:aws:sqs:${var.regiao}:${data.aws_caller_identity.atual.account_id}:booklit-prod-*"]
       },
       {
+        Sid      = "FotosDePerfil"
+        Effect   = "Allow"
+        Action   = ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"]
+        Resource = ["${aws_s3_bucket.fotos.arn}/fotos/*"]
+      },
+      {
         Sid      = "EnviarEmail"
         Effect   = "Allow"
         Action   = ["ses:SendEmail"]

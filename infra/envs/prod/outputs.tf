@@ -49,3 +49,7 @@ output "dns_dmarc" {
   description = "Registro TXT recomendado (Host _dmarc): pede relatórios sem rejeitar nada ainda"
   value       = "v=DMARC1; p=none; rua=mailto:dmarc@${var.dominio_email}"
 }
+
+output "fotos_bucket" {
+  value = aws_s3_bucket.fotos.bucket
+}

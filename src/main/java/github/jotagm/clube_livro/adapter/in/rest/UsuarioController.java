@@ -1,9 +1,13 @@
 package github.jotagm.clube_livro.adapter.in.rest;
 
+import github.jotagm.clube_livro.adapter.in.rest.dto.request.FotoConfirmacaoRequest;
+import github.jotagm.clube_livro.adapter.in.rest.dto.request.FotoEnvioRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.PerfilRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.UsuarioRequest;
+import github.jotagm.clube_livro.adapter.in.rest.dto.response.FotoEnvioResponse;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.PerfilResponse;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.UsuarioResponse;
+import github.jotagm.clube_livro.application.service.FotoPerfilService;
 import github.jotagm.clube_livro.application.service.PerfilService;
 import github.jotagm.clube_livro.application.service.UsuarioService;
 import github.jotagm.clube_livro.configs.AutorizacaoClube;
@@ -30,6 +34,7 @@ public class UsuarioController {
 
     private final UsuarioService usuarioService;
     private final PerfilService perfilService;
+    private final FotoPerfilService fotoPerfilService;
     private final AutorizacaoClube autorizacaoClube;
 
     @Operation(
@@ -49,7 +54,8 @@ public class UsuarioController {
     @ApiResponse(responseCode = "200", description = "Usuário autenticado")
     @GetMapping("/me")
     public ResponseEntity<UsuarioResponse> eu() {
-        return ResponseEntity.ok(UsuarioResponse.from(autorizacaoClube.usuarioAutenticado()));
+        Usuario eu = autorizacaoClube.usuarioAutenticado();
+        return ResponseEntity.ok(UsuarioResponse.from(eu, fotoPerfilService.urlDe(eu)));
     }
 
     @Operation(summary = "Busca um usuário por id", description = "Só o próprio usuário pode consultar os próprios dados.")
@@ -95,6 +101,39 @@ public class UsuarioController {
     public ResponseEntity<UsuarioResponse> editarPerfil(@RequestBody @Valid PerfilRequest request) {
         Usuario atualizado = perfilService.atualizarPerfil(
                 autorizacaoClube.usuarioAutenticado(), request.nome(), request.bio());
+        return ResponseEntity.ok(UsuarioResponse.from(atualizado, fotoPerfilService.urlDe(atualizado)));
+    }
+
+    @Operation(
+            summary = "Pede um envio de foto de perfil",
+            description = "Devolve uma URL assinada do S3 (válida por poucos minutos). O cliente faz um PUT nela, com os cabeçalhos devolvidos e a imagem no corpo, e depois confirma em `PUT /usuarios/me/foto`. JPEG, PNG ou WebP de até 2 MB.")
+    @ApiResponse(responseCode = "200", description = "Envio assinado")
+    @ApiResponse(responseCode = "422", description = "Formato ou tamanho não aceito")
+    @ApiResponse(responseCode = "503", description = "Armazenamento de fotos desligado")
+    @PostMapping("/me/foto/envio")
+    public ResponseEntity<FotoEnvioResponse> pedirEnvioDeFoto(@RequestBody @Valid FotoEnvioRequest request) {
+        var envio = fotoPerfilService.solicitarEnvio(
+                autorizacaoClube.usuarioAutenticado(), request.contentType(), request.tamanho());
+        return ResponseEntity.ok(FotoEnvioResponse.from(envio, request.contentType()));
+    }
+
+    @Operation(
+            summary = "Confirma a foto de perfil",
+            description = "Depois do PUT no S3. Confere que o objeto existe, é de uma imagem aceita e cabe no limite; só então troca a foto e apaga a anterior.")
+    @ApiResponse(responseCode = "200", description = "Foto trocada")
+    @ApiResponse(responseCode = "403", description = "A chave não é deste usuário")
+    @ApiResponse(responseCode = "422", description = "Imagem ainda não enviada ou recusada")
+    @PutMapping("/me/foto")
+    public ResponseEntity<UsuarioResponse> confirmarFoto(@RequestBody @Valid FotoConfirmacaoRequest request) {
+        Usuario atualizado = fotoPerfilService.confirmar(autorizacaoClube.usuarioAutenticado(), request.chave());
+        return ResponseEntity.ok(UsuarioResponse.from(atualizado, fotoPerfilService.urlDe(atualizado)));
+    }
+
+    @Operation(summary = "Remove a foto de perfil", description = "Volta para as iniciais e apaga a imagem do bucket.")
+    @ApiResponse(responseCode = "200", description = "Foto removida (ou já não havia)")
+    @DeleteMapping("/me/foto")
+    public ResponseEntity<UsuarioResponse> removerFoto() {
+        Usuario atualizado = fotoPerfilService.remover(autorizacaoClube.usuarioAutenticado());
         return ResponseEntity.ok(UsuarioResponse.from(atualizado));
     }
 

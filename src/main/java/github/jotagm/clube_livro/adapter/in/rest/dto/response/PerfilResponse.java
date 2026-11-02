@@ -14,6 +14,7 @@ public record PerfilResponse(
         Integer id,
         String nome,
         String bio,
+        String fotoUrl,
         LocalDateTime membroDesde,
         boolean ehVoce,
         int ano,

@@ -22,6 +22,8 @@ locals {
       BOOKLIT_EMAIL_REMETENTE  = "no-reply@${var.dominio_email}"
       # Login em duas etapas: só depois do acesso de produção do SES, senão ninguém entra.
       BOOKLIT_LOGIN_EXIGIR_CODIGO = tostring(var.login_exige_codigo)
+      # Fotos de perfil: bucket privado (fotos.tf); vazio desliga os endpoints de foto.
+      BOOKLIT_FOTOS_BUCKET = aws_s3_bucket.fotos.bucket
       # Aviso por e-mail de convite de clube, pelo Client_GO (template convite-clube).
       BOOKLIT_CONVITE_EMAIL_HABILITADO = tostring(var.convite_email_habilitado)
     },

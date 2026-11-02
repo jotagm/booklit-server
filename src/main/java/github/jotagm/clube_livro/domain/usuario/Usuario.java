@@ -33,10 +33,13 @@ public class Usuario {
      */
     @Column(name = "email_verificado_em")
     LocalDateTime emailVerificadoEm;
+    /** Só a chave do objeto no S3: a imagem nunca passa pelo banco nem pela API. */
+    @Column(name = "foto_chave", length = 200)
+    String fotoChave;
 
     /** Construtor sem bio: é o que o cadastro e os testes sempre usaram. */
     public Usuario(Integer id, String nome, String email, String senhaHash, LocalDateTime createdAt) {
-        this(id, nome, email, senhaHash, createdAt, null, null);
+        this(id, nome, email, senhaHash, createdAt, null, null, null);
     }
 
     public void atualizarDados(String nome, String email) {
@@ -47,6 +50,15 @@ public class Usuario {
     public void atualizarPerfil(String nome, String bio) {
         this.nome = nome.trim();
         this.bio = bio == null || bio.isBlank() ? null : bio.trim();
+    }
+
+    /** Chave da foto no bucket (fotos/<usuario>/<uuid>.<ext>); nula = sem foto. */
+    public void definirFoto(String chave) {
+        this.fotoChave = chave;
+    }
+
+    public void removerFoto() {
+        this.fotoChave = null;
     }
 
     public boolean emailVerificado() {

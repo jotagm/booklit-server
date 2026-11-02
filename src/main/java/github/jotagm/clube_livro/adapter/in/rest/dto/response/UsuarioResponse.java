@@ -10,16 +10,23 @@ public record UsuarioResponse(
         String email,
         String bio,
         LocalDateTime createdAt,
-        boolean emailVerificado
+        boolean emailVerificado,
+        /** URL assinada de curta duração; nula sem foto. */
+        String fotoUrl
 ) {
     public static UsuarioResponse from(Usuario usuario) {
+        return from(usuario, null);
+    }
+
+    public static UsuarioResponse from(Usuario usuario, String fotoUrl) {
         return new UsuarioResponse(
                 usuario.getId(),
                 usuario.getNome(),
                 usuario.getEmail(),
                 usuario.getBio(),
                 usuario.getCreatedAt(),
-                usuario.emailVerificado()
+                usuario.emailVerificado(),
+                fotoUrl
         );
     }
 }

@@ -33,6 +33,7 @@ public class PerfilService {
     private final UsuarioClubeRepository usuarioClubeRepository;
     private final LeituraPessoalRepository leituraPessoalRepository;
     private final MetaLeituraRepository metaLeituraRepository;
+    private final FotoPerfilService fotoPerfilService;
 
     public Usuario atualizarPerfil(Usuario usuario, String nome, String bio) {
         return usuarioService.atualizarPerfil(usuario, nome, bio);
@@ -74,7 +75,7 @@ public class PerfilService {
                 .orElse(null);
 
         return new PerfilResponse(
-                alvo.getId(), alvo.getNome(), alvo.getBio(), alvo.getCreatedAt(), ehVoce,
+                alvo.getId(), alvo.getNome(), alvo.getBio(), fotoPerfilService.urlDe(alvo), alvo.getCreatedAt(), ehVoce,
                 ano, lidosNoAno, meta, lidos.size(),
                 lendo.stream().map(LivroDoPerfil::from).toList(),
                 lidos.stream().limit(MAX_LIDOS_RECENTES).map(LivroDoPerfil::from).toList(),
