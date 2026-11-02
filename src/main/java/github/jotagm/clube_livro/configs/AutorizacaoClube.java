@@ -1,9 +1,8 @@
 package github.jotagm.clube_livro.configs;
 
 import github.jotagm.clube_livro.adapter.out.persistence.ClubeRepository;
-import github.jotagm.clube_livro.adapter.out.persistence.UsuarioClubeRepository;
+import github.jotagm.clube_livro.application.service.UsuarioClubeService;
 import github.jotagm.clube_livro.application.service.UsuarioService;
-import github.jotagm.clube_livro.domain.clube.ClubePapel;
 import github.jotagm.clube_livro.domain.exceptions.AcessoNegadoException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
@@ -22,7 +21,7 @@ import java.util.UUID;
 public class AutorizacaoClube {
 
     private final UsuarioService usuarioService;
-    private final UsuarioClubeRepository usuarioClubeRepository;
+    private final UsuarioClubeService usuarioClubeService;
     private final ClubeRepository clubeRepository;
 
     public Usuario usuarioAutenticado() {
@@ -31,13 +30,11 @@ public class AutorizacaoClube {
     }
 
     public boolean isMembro(Integer usuarioId, UUID clubeId) {
-        return usuarioClubeRepository.findByUsuarioIdAndClubeId(usuarioId, clubeId).isPresent();
+        return usuarioClubeService.isMembro(usuarioId, clubeId);
     }
 
     public boolean isLider(Integer usuarioId, UUID clubeId) {
-        return usuarioClubeRepository.findByUsuarioIdAndClubeId(usuarioId, clubeId)
-                .map(uc -> uc.getPapel() == ClubePapel.LIDER)
-                .orElse(false);
+        return usuarioClubeService.isLider(usuarioId, clubeId);
     }
 
     public boolean isClubePublico(UUID clubeId) {

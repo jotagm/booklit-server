@@ -18,6 +18,22 @@ concurrency:
 jobs:
   testes:
     runs-on: ubuntu-latest
+    # Postgres descartável para o MigracoesPostgresTest: roda as migrações do Flyway e confere
+    # o schema contra as entidades (ddl-auto=validate). O resto da suíte usa H2.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: booklit_teste
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -32,6 +48,8 @@ jobs:
         run: mvn -B -f auth-core/pom.xml install
 
       - name: booklit-server
+        env:
+          BOOKLIT_TEST_PG_URL: jdbc:postgresql://localhost:5432/booklit_teste
         run: mvn -B verify
 
   imagem:

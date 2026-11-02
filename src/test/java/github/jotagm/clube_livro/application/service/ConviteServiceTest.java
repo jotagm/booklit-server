@@ -6,16 +6,19 @@ import github.jotagm.clube_livro.domain.clube.Clube;
 import github.jotagm.clube_livro.domain.clube.ClubePapel;
 import github.jotagm.clube_livro.domain.clube.UsuarioClube;
 import github.jotagm.clube_livro.domain.clube.convite.Convite;
-import github.jotagm.clube_livro.domain.usuario.Usuario;
 import github.jotagm.clube_livro.domain.clube.convite.ConviteStatus;
 import github.jotagm.clube_livro.domain.exceptions.ConflitoException;
 import github.jotagm.clube_livro.domain.exceptions.RegraDeNegocioException;
+import github.jotagm.clube_livro.domain.usuario.Usuario;
+import github.jotagm.clube_livro.support.RelogioDeTeste;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -49,6 +52,8 @@ class ConviteServiceTest {
 
     @Mock
     private EnviadorDeConvite enviadorDeConvite;
+
+    @Spy private Clock relogio = new RelogioDeTeste();
 
     @InjectMocks
     private ConviteService conviteService;
@@ -177,7 +182,7 @@ class ConviteServiceTest {
         Clube clube = Clube.builder().id(UUID.randomUUID()).nome("Clube").build();
         Usuario usuario = Usuario.builder().id(7).email("novo@email.com").build();
         when(clubeService.buscarPorCodigoConvite("abc123")).thenReturn(clube);
-        when(usuarioClubeService.listarPorClube(clube.getId())).thenReturn(List.of());
+        when(usuarioClubeService.isMembro(usuario.getId(), clube.getId())).thenReturn(false);
 
         Clube resultado = conviteService.entrarPorCodigo("abc123", usuario);
 
@@ -191,8 +196,7 @@ class ConviteServiceTest {
         Clube clube = Clube.builder().id(UUID.randomUUID()).nome("Clube").build();
         Usuario usuario = Usuario.builder().id(7).email("membro@email.com").build();
         when(clubeService.buscarPorCodigoConvite("abc123")).thenReturn(clube);
-        when(usuarioClubeService.listarPorClube(clube.getId()))
-                .thenReturn(List.of(UsuarioClube.novo(usuario, clube, ClubePapel.MEMBRO)));
+        when(usuarioClubeService.isMembro(usuario.getId(), clube.getId())).thenReturn(true);
 
         conviteService.entrarPorCodigo("abc123", usuario);
 
@@ -219,7 +223,7 @@ class ConviteServiceTest {
         Convite convite = conviteDoClube(clube, ConviteStatus.PENDENTE);
         when(conviteRepository.findById(convite.getId())).thenReturn(Optional.of(convite));
         when(usuarioService.buscarPorEmail("convidado@email.com")).thenReturn(usuario);
-        when(usuarioClubeService.listarPorClube(clube.getId())).thenReturn(List.of());
+        when(usuarioClubeService.isMembro(usuario.getId(), clube.getId())).thenReturn(false);
         when(conviteRepository.save(convite)).thenReturn(convite);
 
         Convite resultado = conviteService.aceitarConvite(convite.getId(), "convidado@email.com");
@@ -235,13 +239,25 @@ class ConviteServiceTest {
         Convite convite = conviteDoClube(clube, ConviteStatus.PENDENTE);
         when(conviteRepository.findById(convite.getId())).thenReturn(Optional.of(convite));
         when(usuarioService.buscarPorEmail("convidado@email.com")).thenReturn(usuario);
-        when(usuarioClubeService.listarPorClube(clube.getId()))
-                .thenReturn(List.of(UsuarioClube.novo(usuario, clube, ClubePapel.MEMBRO)));
+        when(usuarioClubeService.isMembro(usuario.getId(), clube.getId())).thenReturn(true);
         when(conviteRepository.save(convite)).thenReturn(convite);
 
         Convite resultado = conviteService.aceitarConvite(convite.getId(), "convidado@email.com");
 
         assertThat(resultado.getStatus()).isEqualTo(ConviteStatus.ACEITO);
+        verify(usuarioClubeService, never()).adicionar(any(), any(), any());
+    }
+
+    /** O "agora" vem do relógio injetado: oito dias depois, o convite de sete já venceu. */
+    @Test
+    void aceitar_depoisDaValidadeDa410PeloRelogioInjetado() {
+        Convite convite = conviteDoClube(Clube.builder().id(UUID.randomUUID()).build(), ConviteStatus.PENDENTE);
+        when(conviteRepository.findById(convite.getId())).thenReturn(Optional.of(convite));
+        ((RelogioDeTeste) relogio).fixarEm(java.time.Instant.now().plus(java.time.Duration.ofDays(8)));
+
+        assertThatThrownBy(() -> conviteService.aceitarConvite(convite.getId(), "convidado@email.com"))
+                .isInstanceOf(github.jotagm.clube_livro.domain.exceptions.RecursoExpiradoException.class)
+                .hasMessage("Convite expirado");
         verify(usuarioClubeService, never()).adicionar(any(), any(), any());
     }
 
@@ -366,8 +382,7 @@ class ConviteServiceTest {
                 .thenReturn((long) ConviteService.MAX_CONVITES_POR_HORA);
 
         assertThatThrownBy(() -> conviteService.criar(clube, lider(), "a@email.com", LocalDateTime.now().plusDays(7)))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-                .hasMessageContaining("429");
+                .isInstanceOf(github.jotagm.clube_livro.domain.exceptions.LimiteExcedidoException.class);
         verify(conviteRepository, never()).save(any());
         verify(enviadorDeConvite, never()).enviar(any());
     }

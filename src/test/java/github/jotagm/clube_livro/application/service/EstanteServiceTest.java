@@ -8,13 +8,16 @@ import github.jotagm.clube_livro.domain.clube.leitura.TipoMeta;
 import github.jotagm.clube_livro.domain.estante.LeituraPessoal;
 import github.jotagm.clube_livro.domain.estante.StatusLeituraPessoal;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
+import github.jotagm.clube_livro.support.RelogioDeTeste;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -31,6 +34,8 @@ class EstanteServiceTest {
 
     @Mock private LeituraPessoalRepository leituraPessoalRepository;
     @Mock private MetaLeituraRepository metaLeituraRepository;
+    @Spy private Clock relogio = new RelogioDeTeste();
+
     @InjectMocks private EstanteService estanteService;
 
     private final Usuario usuario = Usuario.builder().id(1).email("leitor@teste.dev").build();

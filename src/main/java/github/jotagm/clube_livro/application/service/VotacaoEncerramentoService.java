@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -33,6 +34,7 @@ public class VotacaoEncerramentoService {
     private final LeituraClubeService leituraClubeService;
     private final PublicadorDeEventos publicadorDeEventos;
     private final TransactionTemplate transactionTemplate;
+    private final Clock relogio;
 
     @Transactional
     public LeituraClube finalizarVotacao(UUID idVotacao) {
@@ -86,7 +88,7 @@ public class VotacaoEncerramentoService {
 
     // Chamada interna não passa pelo proxy do Spring; o TransactionTemplate garante a transação.
     public List<LeituraClube> encerrarVotacoesVencidas() {
-        List<Votacao> vencidas = votacaoService.listarAbertasVencidas(LocalDateTime.now());
+        List<Votacao> vencidas = votacaoService.listarAbertasVencidas(LocalDateTime.now(relogio));
         List<LeituraClube> encerradas = new ArrayList<>();
 
         for (Votacao votacao : vencidas) {

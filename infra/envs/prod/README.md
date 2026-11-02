@@ -70,7 +70,9 @@ sudo -E docker run --rm -e PGPASSWORD postgres:16-alpine sh -c \
    | psql -v ON_ERROR_STOP=1 "host=<banco_endpoint> dbname=booklit user=booklit sslmode=require"'
 ```
 Faça isso **antes** do primeiro deploy, ou com a API parada (`cd /opt/booklit && sudo docker compose stop api`):
-senão o Hibernate cria as tabelas vazias primeiro e o restore colide com elas.
+senão o Flyway cria as tabelas vazias primeiro (V1 em diante) e o restore colide com elas.
+Se o restore vier de um banco criado antes do Flyway, a primeira subida da API faz o baseline
+sozinha (`baseline-on-migrate`): marca a V1 como aplicada e roda só as migrações seguintes.
 
 ## Dia a dia
 

@@ -14,20 +14,30 @@ Leituras têm início e fim. Uma abordagem óbvia seria persistir um campo `stat
 Optei por não fazer isso. Uma leitura está ativa quando `data_inicio <= NOW() <= data_fim` — o status é derivado do tempo, não armazenado. Isso elimina uma classe inteira de bugs de inconsistência entre o estado real e o estado salvo, e simplifica a lógica de negócio.
 ---
 ## Arquitetura
-Domain-Driven Design com Layered Architecture. O domínio é completamente isolado de infraestrutura — entidades de domínio não conhecem JPA. Controllers nunca expõem entidades diretamente, sempre DTOs.
+Monólito com DDD e arquitetura hexagonal (ports and adapters). Os services da camada de
+aplicação só falam com a infraestrutura por ports (`PublicadorDeEventos`,
+`ArmazenamentoDeFotos`, `CatalogoDeLivros`, `EnviadorDeConvite`, `RegistroDeFalhasDeLogin`).
+Controllers nunca expõem entidades, sempre DTOs, e os services não conhecem HTTP: lançam
+exceções de domínio que o `GlobalExceptionHandler` traduz em status.
+
+**Uma concessão consciente:** as entidades do domínio carregam as anotações do JPA
+(`@Entity`, `@Column`). Separar exigiria um modelo de persistência espelhado e conversores
+para cada uma das 14 entidades, sem ganho real com um único banco relacional. O que é
+infraestrutura de verdade (outbox, desafios de OTP, falhas de login, eventos processados) tem
+entidade própria nos adapters, fora do domínio.
+
+O schema é versionado com Flyway (`src/main/resources/db/migration`); o Hibernate só confere
+se as entidades batem com ele (`ddl-auto: validate`).
 ```
-src/main/java/github/jotagm/booklit/
-├── domain/
-│   ├── usuario/
-│   └── clube/
-│       ├── convite/
-│       ├── leitura/
-│       └── votacao/
+src/main/java/github/jotagm/clube_livro/
+├── domain/            # entidades e regras: clube, convite, leitura, votacao, estante, feed...
+├── application/
+│   ├── port/out/      # o que o domínio precisa do mundo de fora
+│   └── service/
 ├── adapter/
-│   ├── in/
-│   │   └── rest/
-│   └── out/
-│       └── persistence/
+│   ├── in/            # rest, scheduler, messaging (consumidor SQS)
+│   └── out/           # persistence, outbox (SNS), storage (S3), email, client (Google Books)
+└── configs/           # segurança, JWT, fuso, clientes AWS
 ```
 ```
 Usuario ──── UsuarioClube ──── Clube
@@ -48,9 +58,12 @@ Usuario ──── UsuarioClube ──── Clube
 | Backend | Spring Boot 3.4.5 + Java 21 |
 | Autenticação | Spring Security + JWT |
 | ORM | Spring Data JPA + Hibernate |
+| Migrações | Flyway |
 | Banco de dados | PostgreSQL 16 |
-| Deploy | Railway + Neon |
-| Integração externa | Google Books API |
+| Infra | AWS (EC2 + Docker Compose + Caddy, RDS, SNS/SQS, S3) via Terraform |
+| CI/CD | GitHub Actions (OIDC, ECR, SSM) |
+| E-mail | Client_GO (serviço em Go) + Resend |
+| Integração externa | Google Books API, Open Library (reserva) |
 | Documentação da API | springdoc-openapi (Swagger UI) |
 
 ---
@@ -64,8 +77,3 @@ Com a aplicação no ar, a especificação OpenAPI é gerada a partir do própri
 
 Ambos são públicos. Para testar os endpoints protegidos: crie um usuário em `POST /usuarios`,
 autentique em `POST /auth/login` e informe o token retornado no botão **Authorize**.
-#   b o o k l i t - s e r v e r 
- 
- #   b o o k l i t - s e r v e r 
- 
- 

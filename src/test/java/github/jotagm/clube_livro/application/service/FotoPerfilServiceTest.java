@@ -1,16 +1,16 @@
 package github.jotagm.clube_livro.application.service;
 
 import github.jotagm.clube_livro.adapter.out.persistence.UsuarioRepository;
-import github.jotagm.clube_livro.application.port.out.ArmazenamentoDeFotos;
 import github.jotagm.clube_livro.application.port.out.ArmazenamentoDeFotos.EnvioAssinado;
 import github.jotagm.clube_livro.application.port.out.ArmazenamentoDeFotos.Objeto;
+import github.jotagm.clube_livro.application.port.out.ArmazenamentoDeFotos;
 import github.jotagm.clube_livro.domain.exceptions.AcessoNegadoException;
 import github.jotagm.clube_livro.domain.exceptions.RegraDeNegocioException;
+import github.jotagm.clube_livro.domain.exceptions.ServicoIndisponivelException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -92,10 +92,9 @@ class FotoPerfilServiceTest {
         when(armazenamento.habilitado()).thenReturn(false);
 
         assertThatThrownBy(() -> servico.solicitarEnvio(ana, "image/jpeg", 10))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("503");
+                .isInstanceOf(ServicoIndisponivelException.class);
         assertThatThrownBy(() -> servico.confirmar(ana, "fotos/7/a.jpg"))
-                .isInstanceOf(ResponseStatusException.class);
+                .isInstanceOf(ServicoIndisponivelException.class);
     }
 
     // ---- confirmar

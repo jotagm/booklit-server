@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,6 +28,7 @@ public class OtpService {
     private final ServicoOtpEmail servico;
     private final UsuarioRepository usuarioRepository;
     private final JwtService jwtService;
+    private final Clock relogio;
 
     /**
      * Resultado da conferência. {@code token} só vem na primeira verificação de e-mail de uma conta
@@ -61,7 +63,7 @@ public class OtpService {
             if (conta.isPresent()) {
                 Usuario usuario = conta.get();
                 boolean primeiraVerificacao = !usuario.emailVerificado();
-                usuario.marcarEmailVerificado(LocalDateTime.now());
+                usuario.marcarEmailVerificado(LocalDateTime.now(relogio));
                 usuarioRepository.save(usuario);
                 // Conta que já tinha e-mail verificado não ganha token aqui: senão o código sozinho
                 // (sem a senha) serviria de login para quem tem acesso à caixa de entrada.

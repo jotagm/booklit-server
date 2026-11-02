@@ -6,9 +6,14 @@ import github.jotagm.clube_livro.domain.exceptions.AcessoNegadoException;
 import github.jotagm.clube_livro.domain.exceptions.ComentarioAninhadoException;
 import github.jotagm.clube_livro.domain.exceptions.ConflitoException;
 import github.jotagm.clube_livro.domain.exceptions.IntervaloInvalidoException;
-import github.jotagm.clube_livro.domain.exceptions.RegraDeNegocioException;
+import github.jotagm.clube_livro.domain.exceptions.LimiteExcedidoException;
 import github.jotagm.clube_livro.domain.exceptions.LivroExternoIndisponivelException;
+import github.jotagm.clube_livro.domain.exceptions.LoginBloqueadoException;
+import github.jotagm.clube_livro.domain.exceptions.NaoAutenticadoException;
+import github.jotagm.clube_livro.domain.exceptions.RecursoExpiradoException;
 import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
+import github.jotagm.clube_livro.domain.exceptions.RegraDeNegocioException;
+import github.jotagm.clube_livro.domain.exceptions.ServicoIndisponivelException;
 import github.jotagm.clube_livro.domain.exceptions.UsuarioJaVotouException;
 import github.jotagm.clube_livro.domain.exceptions.VotacaoSemVotosException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -84,6 +89,30 @@ public class GlobalExceptionHandler {
         return construir(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(NaoAutenticadoException.class)
+    public ResponseEntity<ErroResponse> tratarNaoAutenticado(NaoAutenticadoException ex,
+                                                              HttpServletRequest request) {
+        return construir(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(RecursoExpiradoException.class)
+    public ResponseEntity<ErroResponse> tratarRecursoExpirado(RecursoExpiradoException ex,
+                                                               HttpServletRequest request) {
+        return construir(HttpStatus.GONE, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(LimiteExcedidoException.class)
+    public ResponseEntity<ErroResponse> tratarLimiteExcedido(LimiteExcedidoException ex,
+                                                              HttpServletRequest request) {
+        return construir(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ServicoIndisponivelException.class)
+    public ResponseEntity<ErroResponse> tratarServicoIndisponivel(ServicoIndisponivelException ex,
+                                                                   HttpServletRequest request) {
+        return construir(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(RegraDeNegocioException.class)
     public ResponseEntity<ErroResponse> tratarRegraDeNegocio(RegraDeNegocioException ex,
                                                               HttpServletRequest request) {
@@ -114,6 +143,16 @@ public class GlobalExceptionHandler {
         ResponseEntity<ErroResponse> resposta = construir(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), request);
         return ResponseEntity.status(resposta.getStatusCode())
                 .header(HttpHeaders.RETRY_AFTER, String.valueOf(segundos))
+                .body(resposta.getBody());
+    }
+
+    /** 429 com Retry-After em segundos: senha errada demais para o e-mail ou para o IP. */
+    @ExceptionHandler(LoginBloqueadoException.class)
+    public ResponseEntity<ErroResponse> tratarLoginBloqueado(LoginBloqueadoException ex,
+                                                              HttpServletRequest request) {
+        ResponseEntity<ErroResponse> resposta = construir(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), request);
+        return ResponseEntity.status(resposta.getStatusCode())
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.segundosParaTentarDeNovo()))
                 .body(resposta.getBody());
     }
 

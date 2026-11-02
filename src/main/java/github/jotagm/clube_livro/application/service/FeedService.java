@@ -1,7 +1,7 @@
 package github.jotagm.clube_livro.application.service;
 
-import github.jotagm.clube_livro.adapter.in.rest.dto.response.FeedItemResponse;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.FeedItemResponse.TipoFeed;
+import github.jotagm.clube_livro.adapter.in.rest.dto.response.FeedItemResponse;
 import github.jotagm.clube_livro.adapter.out.persistence.*;
 import github.jotagm.clube_livro.configs.AutorizacaoClube;
 import github.jotagm.clube_livro.domain.clube.Clube;
@@ -19,6 +19,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -47,6 +48,7 @@ public class FeedService {
     private final ReacaoService reacaoService;
     private final AutorizacaoClube autorizacaoClube;
     private final FotoPerfilService fotoPerfilService;
+    private final Clock relogio;
 
     /** Itens sem reações montadas ainda — o mesmo contêiner serve para ordenar antes de consultar reações. */
     private record Bruto(String id, TipoFeed tipo, Clube clube, Usuario autor, LocalDateTime quando,
@@ -67,7 +69,7 @@ public class FeedService {
         }
         if (clubes.isEmpty()) return List.of();
 
-        LocalDateTime agora = LocalDateTime.now();
+        LocalDateTime agora = LocalDateTime.now(relogio);
         Pageable pagina = PageRequest.of(0, tamanho);
         List<Bruto> brutos = new ArrayList<>();
 

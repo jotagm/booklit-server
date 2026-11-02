@@ -9,15 +9,15 @@ import github.jotagm.clube_livro.domain.clube.leitura.TipoMeta;
 import github.jotagm.clube_livro.domain.estante.LeituraPessoal;
 import github.jotagm.clube_livro.domain.estante.MetaLeitura;
 import github.jotagm.clube_livro.domain.estante.StatusLeituraPessoal;
+import github.jotagm.clube_livro.domain.exceptions.ConflitoException;
 import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
@@ -32,6 +32,7 @@ public class EstanteService {
 
     private final LeituraPessoalRepository leituraPessoalRepository;
     private final MetaLeituraRepository metaLeituraRepository;
+    private final Clock relogio;
 
     public List<LeituraPessoal> listar(Usuario usuario, StatusLeituraPessoal status) {
         return status == null
@@ -47,7 +48,7 @@ public class EstanteService {
 
     public LeituraPessoal adicionar(Usuario usuario, LeituraPessoalRequest request) {
         if (leituraPessoalRepository.findByUsuarioIdAndLivroGoogleId(usuario.getId(), request.livroGoogleId()).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Este livro já está na sua estante");
+            throw new ConflitoException("Este livro já está na sua estante");
         }
         LeituraPessoal leitura = LeituraPessoal.adicionar(
                 usuario, request.livroGoogleId(), request.livroTitulo(), request.livroAutor(),
@@ -152,6 +153,6 @@ public class EstanteService {
     }
 
     private LocalDate hoje() {
-        return LocalDate.now();
+        return LocalDate.now(relogio);
     }
 }

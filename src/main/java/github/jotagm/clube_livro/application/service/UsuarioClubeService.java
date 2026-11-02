@@ -44,6 +44,21 @@ public class UsuarioClubeService {
         return usuarioClubeRepository.findByClubeId(clubeId);
     }
 
+    /**
+     * Fonte única de "essa pessoa é membro?". O {@code AutorizacaoClube} (anotações
+     * {@code @RequireMembro}/{@code @RequireLider}) e os services perguntam aqui, para a regra
+     * não existir em versões diferentes espalhadas pelo código.
+     */
+    public boolean isMembro(Integer usuarioId, UUID clubeId) {
+        return usuarioClubeRepository.findByUsuarioIdAndClubeId(usuarioId, clubeId).isPresent();
+    }
+
+    public boolean isLider(Integer usuarioId, UUID clubeId) {
+        return usuarioClubeRepository.findByUsuarioIdAndClubeId(usuarioId, clubeId)
+                .map(uc -> uc.getPapel() == ClubePapel.LIDER)
+                .orElse(false);
+    }
+
     public UsuarioClube buscarPorUsuarioEClube(Integer usuarioId, UUID clubeId) {
         return usuarioClubeRepository.findByUsuarioIdAndClubeId(usuarioId, clubeId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não é membro deste clube"));

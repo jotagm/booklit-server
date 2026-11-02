@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,6 +29,7 @@ public class LeituraClubeService {
     private final ClubeService clubeService;
     private final UsuarioClubeService usuarioClubeService;
     private final RegistroService registroService;
+    private final Clock relogio;
 
     public LeituraClube salvar(LeituraClube leituraClube) {
         return leituraClubeRepository.save(leituraClube);
@@ -148,7 +150,7 @@ public class LeituraClubeService {
     }
 
     public Optional<LeituraClube> buscarLeituraAtiva(UUID clubeId){
-        LocalDateTime horario = LocalDateTime.now();
+        LocalDateTime horario = LocalDateTime.now(relogio);
         return leituraClubeRepository.findLeituraAtiva(clubeId, horario);
     }
 

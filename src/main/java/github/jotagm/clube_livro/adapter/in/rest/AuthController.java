@@ -5,11 +5,13 @@ import github.jotagm.clube_livro.adapter.in.rest.dto.request.LoginCodigoRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.LoginRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.LoginResponse;
 import github.jotagm.clube_livro.application.service.LoginService;
+import github.jotagm.clube_livro.application.service.ProtecaoDeLoginService;
 import github.jotagm.clube_livro.configs.JwtService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -34,6 +36,7 @@ public class AuthController {
     private final UserDetailsService userDetailsService;
     private final JwtService jwtService;
     private final LoginService loginService;
+    private final ProtecaoDeLoginService protecaoDeLogin;
 
     @Operation(
             summary = "Confere e-mail e senha (primeira etapa do login)",
@@ -47,12 +50,19 @@ public class AuthController {
     @ApiResponse(responseCode = "200", description = "Credenciais válidas — token emitido")
     @ApiResponse(responseCode = "202", description = "Credenciais válidas — código enviado por e-mail")
     @ApiResponse(responseCode = "401", description = "E-mail ou senha inválidos", content = @io.swagger.v3.oas.annotations.media.Content)
-    @ApiResponse(responseCode = "429", description = "Código pedido antes do intervalo; ver Retry-After", content = @io.swagger.v3.oas.annotations.media.Content)
+    @ApiResponse(responseCode = "429", description = "Muitas senhas erradas para o e-mail ou o IP, ou código pedido antes do intervalo; ver Retry-After", content = @io.swagger.v3.oas.annotations.media.Content)
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request,
+                                               HttpServletRequest http) {
+        // Atrás do Caddy, o IP real vem do X-Forwarded-For (server.forward-headers-strategy).
+        // A tentativa conta como falha até a senha ser conferida; e-mail inexistente conta igual
+        // a senha errada, para o limite não revelar quem tem conta.
+        protecaoDeLogin.reservarTentativa(request.email(), http.getRemoteAddr());
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.email(), request.senha())
         );
+        protecaoDeLogin.registrarSucesso(request.email());
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.email());
         if (!loginService.exigeCodigo()) {

@@ -1,12 +1,12 @@
 package github.jotagm.clube_livro.configs;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import github.jotagm.auth.otp.EnviadorDeOtp;
 import github.jotagm.auth.otp.GeradorDeCodigo;
 import github.jotagm.auth.otp.HasherDeCodigo;
 import github.jotagm.auth.otp.PoliticaOtp;
 import github.jotagm.auth.otp.RepositorioDeDesafios;
 import github.jotagm.auth.otp.ServicoOtpEmail;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import github.jotagm.clube_livro.adapter.out.email.ClientGoEnviadorDeOtp;
 import github.jotagm.clube_livro.adapter.out.email.SesEnviadorDeOtp;
 import lombok.extern.slf4j.Slf4j;
@@ -59,11 +59,6 @@ public class AuthOtpConfig {
             return new HasherDeCodigo(chave);
         }
         return new HasherDeCodigo(Base64.getDecoder().decode(chaveBase64.strip()));
-    }
-
-    @Bean
-    Clock relogio() {
-        return Clock.systemUTC();
     }
 
     @Bean

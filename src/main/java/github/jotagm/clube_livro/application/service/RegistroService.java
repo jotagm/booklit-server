@@ -3,11 +3,10 @@ package github.jotagm.clube_livro.application.service;
 import github.jotagm.clube_livro.adapter.out.persistence.RegistroRepository;
 import github.jotagm.clube_livro.domain.clube.leitura.Registro;
 import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
+import github.jotagm.clube_livro.domain.exceptions.RegraDeNegocioException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -52,11 +51,11 @@ public class RegistroService {
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Registro não encontrado"));
 
         if (novoValor < registro.getValorAtual()) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "O progresso não pode diminuir");
+            throw new RegraDeNegocioException("O progresso não pode diminuir");
         }
 
         if (novoValor > registro.getLeituraClube().getValorMeta()) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "O progresso não pode ultrapassar a meta da leitura");
+            throw new RegraDeNegocioException("O progresso não pode ultrapassar a meta da leitura");
         }
 
         registro.registrarProgresso(novoValor);

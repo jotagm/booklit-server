@@ -35,19 +35,23 @@ public class VotacaoEncerradaConsumidor {
     private final LeituraClubeService leituraClubeService;
     private final TransactionTemplate transactionTemplate;
     private final String filaUrl;
+    private final int esperaSegundos;
 
     public VotacaoEncerradaConsumidor(SqsClient sqsClient,
                                       ObjectMapper objectMapper,
                                       EventoProcessadoRepository eventoProcessadoRepository,
                                       LeituraClubeService leituraClubeService,
                                       TransactionTemplate transactionTemplate,
-                                      @Value("${booklit.eventos.fila-url}") String filaUrl) {
+                                      @Value("${booklit.eventos.fila-url}") String filaUrl,
+                                      @Value("${booklit.eventos.consumidor.espera-segundos:20}") int esperaSegundos) {
         this.sqsClient = sqsClient;
         this.objectMapper = objectMapper;
         this.eventoProcessadoRepository = eventoProcessadoRepository;
         this.leituraClubeService = leituraClubeService;
         this.transactionTemplate = transactionTemplate;
         this.filaUrl = filaUrl;
+        // O SQS aceita de 0 a 20; o timeout de leitura do cliente HTTP do SDK (30 s) cobre o máximo.
+        this.esperaSegundos = Math.max(0, Math.min(20, esperaSegundos));
     }
 
     @Scheduled(fixedDelayString = "${booklit.eventos.consumidor.intervalo-ms:2000}")
@@ -55,7 +59,10 @@ public class VotacaoEncerradaConsumidor {
         List<Message> mensagens = sqsClient.receiveMessage(ReceiveMessageRequest.builder()
                 .queueUrl(filaUrl)
                 .maxNumberOfMessages(10)
-                .waitTimeSeconds(1)
+                // Long polling: a chamada espera até 20 s por uma mensagem em vez de voltar vazia
+                // na hora. Com fila parada, cai de ~860 mil para ~120 mil ReceiveMessage por mês
+                // (o grátis do SQS é 1 milhão), e uma mensagem nova chega na hora do mesmo jeito.
+                .waitTimeSeconds(esperaSegundos)
                 .build()).messages();
 
         for (Message mensagem : mensagens) {

@@ -3,7 +3,6 @@ package github.jotagm.clube_livro.application.service;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.ComentarioAtualizarRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.ComentarioRequest;
 import github.jotagm.clube_livro.adapter.out.persistence.ComentarioRepository;
-import github.jotagm.clube_livro.domain.clube.ClubePapel;
 import github.jotagm.clube_livro.domain.clube.leitura.Comentario;
 import github.jotagm.clube_livro.domain.clube.leitura.LeituraClube;
 import github.jotagm.clube_livro.domain.exceptions.AcessoNegadoException;
@@ -13,6 +12,7 @@ import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -24,6 +24,7 @@ public class ComentarioService {
     private final ComentarioRepository comentarioRepository;
     private final LeituraClubeService leituraClubeService;
     private final UsuarioClubeService usuarioClubeService;
+    private final Clock relogio;
 
     public Comentario criar(UUID leituraClubeId, ComentarioRequest request, Usuario autor) {
         LeituraClube leitura = leituraClubeService.buscarPorId(leituraClubeId);
@@ -43,7 +44,7 @@ public class ComentarioService {
                 .comentarioPai(comentarioPai)
                 .conteudo(request.conteudo())
                 .removido(false)
-                .createdAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now(relogio))
                 .build();
 
         return comentarioRepository.save(comentario);
@@ -96,19 +97,10 @@ public class ComentarioService {
     }
 
     private boolean isMembro(Integer usuarioId, UUID clubeId) {
-        try {
-            usuarioClubeService.buscarPorUsuarioEClube(usuarioId, clubeId);
-            return true;
-        } catch (RecursoNaoEncontradoException e) {
-            return false;
-        }
+        return usuarioClubeService.isMembro(usuarioId, clubeId);
     }
 
     private boolean isLider(Integer usuarioId, UUID clubeId) {
-        try {
-            return usuarioClubeService.buscarPorUsuarioEClube(usuarioId, clubeId).getPapel() == ClubePapel.LIDER;
-        } catch (RecursoNaoEncontradoException e) {
-            return false;
-        }
+        return usuarioClubeService.isLider(usuarioId, clubeId);
     }
 }

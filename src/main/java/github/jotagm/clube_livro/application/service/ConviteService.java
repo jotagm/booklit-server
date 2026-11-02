@@ -6,17 +6,19 @@ import github.jotagm.clube_livro.domain.clube.Clube;
 import github.jotagm.clube_livro.domain.clube.ClubePapel;
 import github.jotagm.clube_livro.domain.clube.convite.Convite;
 import github.jotagm.clube_livro.domain.clube.convite.ConviteStatus;
+import github.jotagm.clube_livro.domain.exceptions.AcessoNegadoException;
 import github.jotagm.clube_livro.domain.exceptions.ConflitoException;
+import github.jotagm.clube_livro.domain.exceptions.LimiteExcedidoException;
+import github.jotagm.clube_livro.domain.exceptions.RecursoExpiradoException;
 import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import github.jotagm.clube_livro.domain.exceptions.RegraDeNegocioException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,6 +36,7 @@ public class ConviteService {
     private final ClubeService clubeService;
     private final LeituraClubeService leituraClubeService;
     private final EnviadorDeConvite enviadorDeConvite;
+    private final Clock relogio;
 
     /** Teto de validade: um convite por e-mail esquecido por meses não deveria continuar valendo. */
     static final Duration VALIDADE_MAXIMA = Duration.ofDays(30);
@@ -52,7 +55,7 @@ public class ConviteService {
     @Transactional
     public Convite criar(Clube clube, Usuario convidadoPor, String email, LocalDateTime expiraEm) {
         String destinatario = email.strip().toLowerCase(Locale.ROOT);
-        LocalDateTime agora = LocalDateTime.now();
+        LocalDateTime agora = LocalDateTime.now(relogio);
 
         if (!expiraEm.isAfter(agora)) {
             throw new RegraDeNegocioException("A expiração do convite precisa estar no futuro");
@@ -72,8 +75,7 @@ public class ConviteService {
 
         if (conviteRepository.countByConvidadoPorIdAndCreatedAtAfter(convidadoPor.getId(), agora.minusHours(1))
                 >= MAX_CONVITES_POR_HORA) {
-            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
-                    "Muitos convites em pouco tempo. Tente de novo mais tarde.");
+            throw new LimiteExcedidoException("Muitos convites em pouco tempo. Tente de novo mais tarde.");
         }
 
         Convite convite = conviteRepository.save(Convite.novo(clube, convidadoPor, destinatario, expiraEm));
@@ -102,10 +104,10 @@ public class ConviteService {
         Convite convite = buscarPorId(id);
 
         if (!convite.pertenceA(emailUsuario)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso negado");
+            throw new AcessoNegadoException("Acesso negado");
         }
-        if (convite.estaPendente() && convite.estaExpirado(LocalDateTime.now())) {
-            throw new ResponseStatusException(HttpStatus.GONE, "Convite expirado");
+        if (convite.estaPendente() && convite.estaExpirado(LocalDateTime.now(relogio))) {
+            throw new RecursoExpiradoException("Convite expirado");
         }
 
         convite.aceitar();
@@ -126,7 +128,7 @@ public class ConviteService {
         Convite convite = buscarPorId(id);
 
         if (!convite.pertenceA(emailUsuario)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso negado");
+            throw new AcessoNegadoException("Acesso negado");
         }
 
         convite.recusar();
@@ -143,7 +145,7 @@ public class ConviteService {
 
     /** Convites pendentes e ainda válidos endereçados ao e-mail do usuário — a caixa de entrada dele. */
     public List<Convite> listarPendentesDoUsuario(String email) {
-        LocalDateTime agora = LocalDateTime.now();
+        LocalDateTime agora = LocalDateTime.now(relogio);
         return conviteRepository
                 .findByEmailDestinatarioIgnoreCaseAndStatusOrderByCreatedAtDesc(email, ConviteStatus.PENDENTE)
                 .stream()
@@ -166,8 +168,7 @@ public class ConviteService {
     }
 
     private boolean ehMembro(Usuario usuario, Clube clube) {
-        return usuarioClubeService.listarPorClube(clube.getId()).stream()
-                .anyMatch(uc -> uc.getUsuario().getId().equals(usuario.getId()));
+        return usuarioClubeService.isMembro(usuario.getId(), clube.getId());
     }
 
     private void adicionarComoMembro(Usuario usuario, Clube clube) {
@@ -189,7 +190,7 @@ public class ConviteService {
 
     @Transactional
     public int expirarVencidos() {
-        List<Convite> vencidos = conviteRepository.findByStatusAndExpiraEmBefore(ConviteStatus.PENDENTE, LocalDateTime.now());
+        List<Convite> vencidos = conviteRepository.findByStatusAndExpiraEmBefore(ConviteStatus.PENDENTE, LocalDateTime.now(relogio));
         vencidos.forEach(Convite::expirar);
         conviteRepository.saveAll(vencidos);
         if (!vencidos.isEmpty()) {

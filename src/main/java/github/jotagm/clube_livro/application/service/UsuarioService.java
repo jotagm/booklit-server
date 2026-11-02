@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +24,11 @@ public class UsuarioService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) {
-        Usuario usuario = buscarPorEmail(email);
+        // O contrato do Spring Security pede UsernameNotFoundException: com ela o
+        // DaoAuthenticationProvider responde igual a senha errada e ainda roda o BCrypt
+        // contra uma senha falsa, para o tempo de resposta não revelar quais e-mails existem.
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
         return User.builder()
                 .username(usuario.getEmail())
                 .password(usuario.getSenhaHash())

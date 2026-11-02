@@ -1,6 +1,10 @@
 server:
   # A Railway injeta PORT e espera que a aplicacao escute nela.
   port: ${PORT:8080}
+  # Atrás do Caddy: o Tomcat lê o X-Forwarded-For de proxies da rede interna (o Caddy está na
+  # rede do Docker), e request.getRemoteAddr() passa a ser o IP de quem chamou, não o do Caddy.
+  # É ele que o limite de tentativas de login usa.
+  forward-headers-strategy: native
 
 spring:
   application:
@@ -15,11 +19,21 @@ spring:
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: update
+      # O schema é do Flyway (db/migration); o Hibernate só confere se as entidades batem.
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
         format_sql: false
+
+  flyway:
+    locations: classpath:db/migration
+    # Banco que já existia antes do Flyway (produção, criado pelo ddl-auto): na primeira subida
+    # o Flyway marca a V1 (schema inicial) como aplicada sem rodar, e segue da V2 em diante
+    # (a V2 cria o que faltar das tabelas e colunas da V1 num banco antigo).
+    # Banco vazio: roda tudo desde a V1.
+    baseline-on-migrate: true
+    baseline-version: 1
 
   task:
     scheduling:
@@ -36,6 +50,10 @@ booklit:
     habilitado: ${BOOKLIT_EVENTOS_HABILITADO:false}
     topico-arn: ${BOOKLIT_EVENTOS_TOPICO_ARN:}
     fila-url: ${BOOKLIT_EVENTOS_FILA_URL:}
+    consumidor:
+      # Long polling do SQS (0 a 20 s): quanto o ReceiveMessage espera por mensagem antes de
+      # voltar vazio. 20 é o mais barato; 0 volta ao polling curto.
+      espera-segundos: ${BOOKLIT_EVENTOS_ESPERA_SEGUNDOS:20}
   aws:
     regiao: ${AWS_REGION:us-east-1}
     endpoint: ${BOOKLIT_AWS_ENDPOINT:}
@@ -44,6 +62,15 @@ booklit:
       # Login em duas etapas: senha e depois um codigo de 6 digitos enviado por e-mail.
       # So ligue com o envio de e-mail funcionando (SES fora do sandbox), senao ninguem entra.
       exigir-codigo: ${BOOKLIT_LOGIN_EXIGIR_CODIGO:false}
+      # Limite de senhas erradas numa janela movel: estourou, 429 com Retry-After ate a falha
+      # mais antiga sair da janela. E-mail + IP segura forca bruta numa conta sem trancar a
+      # dona dela (que entra de outro IP); IP segura quem testa uma senha em muitas contas;
+      # e-mail sozinho (alto) segura ataque distribuido. Ver ProtecaoDeLoginService.
+      protecao:
+        janela: ${BOOKLIT_LOGIN_JANELA:15m}
+        max-falhas-por-email-e-ip: ${BOOKLIT_LOGIN_MAX_FALHAS_EMAIL_IP:5}
+        max-falhas-por-ip: ${BOOKLIT_LOGIN_MAX_FALHAS_IP:30}
+        max-falhas-por-email: ${BOOKLIT_LOGIN_MAX_FALHAS_EMAIL:50}
     otp:
       # Chave do HMAC dos codigos, base64 com 32+ bytes (openssl rand -base64 32).
       # Vazia = chave aleatoria por instancia (ok em dev; codigos morrem no restart).

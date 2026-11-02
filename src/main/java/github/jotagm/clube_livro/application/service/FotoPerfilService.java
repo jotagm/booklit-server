@@ -1,17 +1,16 @@
 package github.jotagm.clube_livro.application.service;
 
 import github.jotagm.clube_livro.adapter.out.persistence.UsuarioRepository;
-import github.jotagm.clube_livro.application.port.out.ArmazenamentoDeFotos;
 import github.jotagm.clube_livro.application.port.out.ArmazenamentoDeFotos.EnvioAssinado;
+import github.jotagm.clube_livro.application.port.out.ArmazenamentoDeFotos;
 import github.jotagm.clube_livro.domain.exceptions.AcessoNegadoException;
 import github.jotagm.clube_livro.domain.exceptions.RegraDeNegocioException;
+import github.jotagm.clube_livro.domain.exceptions.ServicoIndisponivelException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Locale;
 import java.util.Map;
@@ -111,7 +110,7 @@ public class FotoPerfilService {
 
     private void exigirHabilitado() {
         if (!armazenamento.habilitado()) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Foto de perfil indisponível no momento");
+            throw new ServicoIndisponivelException("Foto de perfil indisponível no momento");
         }
     }
 

@@ -131,6 +131,23 @@ class UsuarioClubeServiceTest {
     }
 
     @Test
+    void isMembroEIsLider_vemDoMesmoVinculo() {
+        UUID clubeId = UUID.randomUUID();
+        UsuarioClube lider = UsuarioClube.builder().papel(ClubePapel.LIDER).build();
+        UsuarioClube membro = UsuarioClube.builder().papel(ClubePapel.MEMBRO).build();
+        when(usuarioClubeRepository.findByUsuarioIdAndClubeId(1, clubeId)).thenReturn(Optional.of(lider));
+        when(usuarioClubeRepository.findByUsuarioIdAndClubeId(2, clubeId)).thenReturn(Optional.of(membro));
+        when(usuarioClubeRepository.findByUsuarioIdAndClubeId(3, clubeId)).thenReturn(Optional.empty());
+
+        assertThat(usuarioClubeService.isMembro(1, clubeId)).isTrue();
+        assertThat(usuarioClubeService.isLider(1, clubeId)).isTrue();
+        assertThat(usuarioClubeService.isMembro(2, clubeId)).isTrue();
+        assertThat(usuarioClubeService.isLider(2, clubeId)).isFalse();
+        assertThat(usuarioClubeService.isMembro(3, clubeId)).isFalse();
+        assertThat(usuarioClubeService.isLider(3, clubeId)).isFalse();
+    }
+
+    @Test
     void atualizar_deveSalvarERetornarMembroAtualizado() {
         UsuarioClube membro = membroExemplo(UUID.randomUUID());
         membro.mudarPapel(ClubePapel.LIDER);

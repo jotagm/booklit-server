@@ -4,20 +4,20 @@ import github.jotagm.clube_livro.adapter.in.rest.dto.request.ComentarioAtualizar
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.ComentarioRequest;
 import github.jotagm.clube_livro.adapter.out.persistence.ComentarioRepository;
 import github.jotagm.clube_livro.domain.clube.Clube;
-import github.jotagm.clube_livro.domain.clube.ClubePapel;
-import github.jotagm.clube_livro.domain.clube.UsuarioClube;
 import github.jotagm.clube_livro.domain.clube.leitura.Comentario;
 import github.jotagm.clube_livro.domain.clube.leitura.LeituraClube;
 import github.jotagm.clube_livro.domain.exceptions.AcessoNegadoException;
 import github.jotagm.clube_livro.domain.exceptions.ComentarioAninhadoException;
-import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
+import github.jotagm.clube_livro.support.RelogioDeTeste;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -37,6 +37,8 @@ class ComentarioServiceTest {
 
     @Mock
     private UsuarioClubeService usuarioClubeService;
+
+    @Spy private Clock relogio = new RelogioDeTeste();
 
     @InjectMocks
     private ComentarioService comentarioService;
@@ -58,9 +60,6 @@ class ComentarioServiceTest {
                 .build();
     }
 
-    private UsuarioClube vinculo(ClubePapel papel) {
-        return UsuarioClube.builder().papel(papel).build();
-    }
 
     private Comentario comentarioExemplo(Usuario autor, LeituraClube leitura, Comentario pai) {
         return Comentario.builder()
@@ -81,7 +80,7 @@ class ComentarioServiceTest {
         ComentarioRequest request = new ComentarioRequest(null, "Ótimo capítulo");
 
         when(leituraClubeService.buscarPorId(leitura.getId())).thenReturn(leitura);
-        when(usuarioClubeService.buscarPorUsuarioEClube(autor.getId(), clubeId)).thenReturn(vinculo(ClubePapel.MEMBRO));
+        when(usuarioClubeService.isMembro(autor.getId(), clubeId)).thenReturn(true);
         when(comentarioRepository.save(any(Comentario.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Comentario resultado = comentarioService.criar(leitura.getId(), request, autor);
@@ -98,8 +97,7 @@ class ComentarioServiceTest {
         ComentarioRequest request = new ComentarioRequest(null, "Ótimo capítulo");
 
         when(leituraClubeService.buscarPorId(leitura.getId())).thenReturn(leitura);
-        when(usuarioClubeService.buscarPorUsuarioEClube(autor.getId(), clubeId))
-                .thenThrow(new RecursoNaoEncontradoException("Usuário não é membro deste clube"));
+        when(usuarioClubeService.isMembro(autor.getId(), clubeId)).thenReturn(false);
 
         assertThatThrownBy(() -> comentarioService.criar(leitura.getId(), request, autor))
                 .isInstanceOf(AcessoNegadoException.class);
@@ -115,7 +113,7 @@ class ComentarioServiceTest {
         ComentarioRequest request = new ComentarioRequest(resposta.getId(), "Concordo!");
 
         when(leituraClubeService.buscarPorId(leitura.getId())).thenReturn(leitura);
-        when(usuarioClubeService.buscarPorUsuarioEClube(autor.getId(), clubeId)).thenReturn(vinculo(ClubePapel.MEMBRO));
+        when(usuarioClubeService.isMembro(autor.getId(), clubeId)).thenReturn(true);
         when(comentarioRepository.findById(resposta.getId())).thenReturn(Optional.of(resposta));
 
         assertThatThrownBy(() -> comentarioService.criar(leitura.getId(), request, autor))
@@ -129,8 +127,7 @@ class ComentarioServiceTest {
         LeituraClube leitura = leituraExemplo(clubeId);
 
         when(leituraClubeService.buscarPorId(leitura.getId())).thenReturn(leitura);
-        when(usuarioClubeService.buscarPorUsuarioEClube(solicitante.getId(), clubeId))
-                .thenThrow(new RecursoNaoEncontradoException("Usuário não é membro deste clube"));
+        when(usuarioClubeService.isMembro(solicitante.getId(), clubeId)).thenReturn(false);
 
         assertThatThrownBy(() -> comentarioService.listarPorLeitura(leitura.getId(), solicitante))
                 .isInstanceOf(AcessoNegadoException.class);
@@ -198,8 +195,7 @@ class ComentarioServiceTest {
         Comentario comentario = comentarioExemplo(autor, leitura, null);
 
         when(comentarioRepository.findById(comentario.getId())).thenReturn(Optional.of(comentario));
-        when(usuarioClubeService.buscarPorUsuarioEClube(lider.getId(), leitura.getClube().getId()))
-                .thenReturn(vinculo(ClubePapel.LIDER));
+        when(usuarioClubeService.isLider(lider.getId(), leitura.getClube().getId())).thenReturn(true);
 
         comentarioService.deletar(comentario.getId(), lider);
 
@@ -214,8 +210,7 @@ class ComentarioServiceTest {
         Comentario comentario = comentarioExemplo(autor, leitura, null);
 
         when(comentarioRepository.findById(comentario.getId())).thenReturn(Optional.of(comentario));
-        when(usuarioClubeService.buscarPorUsuarioEClube(outroMembro.getId(), leitura.getClube().getId()))
-                .thenReturn(vinculo(ClubePapel.MEMBRO));
+        when(usuarioClubeService.isLider(outroMembro.getId(), leitura.getClube().getId())).thenReturn(false);
 
         assertThatThrownBy(() -> comentarioService.deletar(comentario.getId(), outroMembro))
                 .isInstanceOf(AcessoNegadoException.class);

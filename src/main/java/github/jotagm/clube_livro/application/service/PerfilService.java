@@ -1,8 +1,8 @@
 package github.jotagm.clube_livro.application.service;
 
-import github.jotagm.clube_livro.adapter.in.rest.dto.response.PerfilResponse;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.PerfilResponse.ClubeEmComum;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.PerfilResponse.LivroDoPerfil;
+import github.jotagm.clube_livro.adapter.in.rest.dto.response.PerfilResponse;
 import github.jotagm.clube_livro.adapter.out.persistence.LeituraPessoalRepository;
 import github.jotagm.clube_livro.adapter.out.persistence.MetaLeituraRepository;
 import github.jotagm.clube_livro.adapter.out.persistence.UsuarioClubeRepository;
@@ -15,6 +15,7 @@ import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
@@ -34,6 +35,7 @@ public class PerfilService {
     private final LeituraPessoalRepository leituraPessoalRepository;
     private final MetaLeituraRepository metaLeituraRepository;
     private final FotoPerfilService fotoPerfilService;
+    private final Clock relogio;
 
     public Usuario atualizarPerfil(Usuario usuario, String nome, String bio) {
         return usuarioService.atualizarPerfil(usuario, nome, bio);
@@ -60,7 +62,7 @@ public class PerfilService {
             throw new RecursoNaoEncontradoException("Usuário não encontrado");
         }
 
-        int ano = LocalDate.now().getYear();
+        int ano = LocalDate.now(relogio).getYear();
         List<LeituraPessoal> lendo = leituraPessoalRepository
                 .findByUsuarioIdAndStatusOrderByUpdatedAtDesc(alvoId, StatusLeituraPessoal.LENDO);
         List<LeituraPessoal> lidos = leituraPessoalRepository

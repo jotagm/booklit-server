@@ -6,15 +6,18 @@ import github.jotagm.clube_livro.domain.clube.Clube;
 import github.jotagm.clube_livro.domain.clube.UsuarioClube;
 import github.jotagm.clube_livro.domain.clube.leitura.LeituraClube;
 import github.jotagm.clube_livro.domain.clube.leitura.Registro;
-import github.jotagm.clube_livro.domain.usuario.Usuario;
 import github.jotagm.clube_livro.domain.clube.leitura.TipoMeta;
 import github.jotagm.clube_livro.domain.exceptions.IntervaloInvalidoException;
+import github.jotagm.clube_livro.domain.usuario.Usuario;
+import github.jotagm.clube_livro.support.RelogioDeTeste;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +46,8 @@ class LeituraClubeServiceTest {
 
     @Mock
     private RegistroService registroService;
+
+    @Spy private Clock relogio = new RelogioDeTeste();
 
     @InjectMocks
     private LeituraClubeService leituraClubeService;
