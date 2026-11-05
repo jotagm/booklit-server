@@ -1,11 +1,15 @@
 package github.jotagm.clube_livro.adapter.in.rest;
 
 import github.jotagm.auth.otp.DesafioEmitido;
+import github.jotagm.clube_livro.adapter.in.rest.dto.request.EsqueciSenhaRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.LoginCodigoRequest;
+import github.jotagm.clube_livro.adapter.in.rest.dto.request.RedefinirSenhaRequest;
+import github.jotagm.clube_livro.adapter.in.rest.dto.response.DesafioOtpResponse;
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.LoginRequest;
 import github.jotagm.clube_livro.adapter.in.rest.dto.response.LoginResponse;
 import github.jotagm.clube_livro.application.service.LoginService;
 import github.jotagm.clube_livro.application.service.ProtecaoDeLoginService;
+import github.jotagm.clube_livro.application.service.RedefinicaoDeSenhaService;
 import github.jotagm.clube_livro.configs.JwtService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -37,6 +41,40 @@ public class AuthController {
     private final JwtService jwtService;
     private final LoginService loginService;
     private final ProtecaoDeLoginService protecaoDeLogin;
+    private final RedefinicaoDeSenhaService redefinicaoDeSenha;
+
+    @Operation(
+            summary = "Esqueci minha senha: envia um código para o e-mail",
+            description = """
+                    Endpoint público. A resposta é a mesma exista conta para o e-mail ou não (sem conta,
+                    nada é enviado). Limites: um envio a cada 60 s e no máximo 5 por hora. O código vale
+                    10 minutos, aceita 5 tentativas e só pode ser usado uma vez.
+                    """)
+    @ApiResponse(responseCode = "202", description = "Pedido aceito; se houver conta, o código segue por e-mail")
+    @ApiResponse(responseCode = "429", description = "Pedido antes do intervalo ou acima do limite; ver Retry-After",
+            content = @io.swagger.v3.oas.annotations.media.Content)
+    @PostMapping("/senha/esqueci")
+    public ResponseEntity<DesafioOtpResponse> esqueciSenha(@RequestBody @Valid EsqueciSenhaRequest request) {
+        DesafioEmitido desafio = redefinicaoDeSenha.solicitar(request.email());
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(new DesafioOtpResponse(desafio.desafioId(), desafio.expiraEm()));
+    }
+
+    @Operation(
+            summary = "Redefine a senha com o código do e-mail",
+            description = """
+                    Endpoint público. Código certo troca a senha, confirma o e-mail, libera o login se
+                    estava bloqueado por senhas erradas e encerra as sessões abertas em outros aparelhos.
+                    A resposta traz um token novo: a pessoa já entra com a senha nova.
+                    """)
+    @ApiResponse(responseCode = "200", description = "Senha redefinida — token emitido")
+    @ApiResponse(responseCode = "400", description = "Senha nova fora do tamanho aceito", content = @io.swagger.v3.oas.annotations.media.Content)
+    @ApiResponse(responseCode = "401", description = "Código incorreto, expirado ou já usado", content = @io.swagger.v3.oas.annotations.media.Content)
+    @PostMapping("/senha/redefinir")
+    public ResponseEntity<LoginResponse> redefinirSenha(@RequestBody @Valid RedefinirSenhaRequest request) {
+        return ResponseEntity.ok(LoginResponse.comToken(
+                redefinicaoDeSenha.redefinir(request.desafioId(), request.codigo(), request.novaSenha())));
+    }
 
     @Operation(
             summary = "Confere e-mail e senha (primeira etapa do login)",

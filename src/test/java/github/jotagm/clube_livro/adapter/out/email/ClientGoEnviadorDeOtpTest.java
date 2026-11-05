@@ -97,7 +97,8 @@ class ClientGoEnviadorDeOtpTest {
         Map<Finalidade, String> templates = Map.of(
                 Finalidade.LOGIN, "otp-login",
                 Finalidade.VERIFICAR_EMAIL, "otp-verificar-email",
-                Finalidade.REDEFINIR_PIN, "otp-redefinir-pin");
+                Finalidade.REDEFINIR_PIN, "otp-redefinir-pin",
+                Finalidade.REDEFINIR_SENHA, "otp-redefinir-senha");
 
         for (var esperado : templates.entrySet()) {
             recebidos.clear();

@@ -10,7 +10,9 @@ public enum Finalidade {
     /** Prova de posse do e-mail no cadastro ou na troca de e-mail. */
     VERIFICAR_EMAIL,
     /** Destrava a redefinição do PIN depois de bloqueio por tentativas. */
-    REDEFINIR_PIN;
+    REDEFINIR_PIN,
+    /** "Esqueci minha senha": o código prova a posse do e-mail e libera a troca da senha. */
+    REDEFINIR_SENHA;
 
     /** Finalidades em que só faz sentido entregar o código se já existir conta para o e-mail. */
     public boolean exigeContaExistente() {

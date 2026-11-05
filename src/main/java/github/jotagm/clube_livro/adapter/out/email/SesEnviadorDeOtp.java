@@ -64,6 +64,7 @@ public class SesEnviadorDeOtp implements EnviadorDeOtp {
             case LOGIN -> "Seu código de acesso ao Booklit";
             case VERIFICAR_EMAIL -> "Confirme seu e-mail no Booklit";
             case REDEFINIR_PIN -> "Código para redefinir seu PIN no Booklit";
+            case REDEFINIR_SENHA -> "Código para redefinir sua senha no Booklit";
         };
     }
 

@@ -1,12 +1,15 @@
 package github.jotagm.clube_livro.application.service;
 
+import github.jotagm.clube_livro.configs.UsuarioAutenticado;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import java.util.List;
+
 import github.jotagm.clube_livro.adapter.in.rest.dto.request.UsuarioRequest;
 import github.jotagm.clube_livro.adapter.out.persistence.UsuarioRepository;
 import github.jotagm.clube_livro.domain.exceptions.RecursoNaoEncontradoException;
 import github.jotagm.clube_livro.domain.usuario.Usuario;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -29,11 +32,8 @@ public class UsuarioService implements UserDetailsService {
         // contra uma senha falsa, para o tempo de resposta não revelar quais e-mails existem.
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
-        return User.builder()
-                .username(usuario.getEmail())
-                .password(usuario.getSenhaHash())
-                .roles("USER")
-                .build();
+        return new UsuarioAutenticado(usuario.getEmail(), usuario.getSenhaHash(),
+                List.of(new SimpleGrantedAuthority("ROLE_USER")), usuario.getSenhaAlteradaEm());
     }
 
     public Usuario salvar(Usuario usuario) {

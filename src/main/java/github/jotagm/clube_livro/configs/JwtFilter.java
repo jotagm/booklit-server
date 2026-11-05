@@ -1,5 +1,9 @@
 package github.jotagm.clube_livro.configs;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,6 +27,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final Clock relogio;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -43,7 +48,7 @@ public class JwtFilter extends OncePerRequestFilter {
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-                if (jwtService.isTokenValido(token, userDetails.getUsername())) {
+                if (jwtService.isTokenValido(token, userDetails.getUsername()) && !revogado(token, userDetails)) {
                     UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities()
                     );
@@ -57,5 +62,18 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Token emitido antes da última redefinição de senha não vale mais. O {@code iat} tem
+     * segundos inteiros, por isso a comparação também: o token emitido no mesmo segundo da troca
+     * (o que a própria redefinição devolve) continua valendo.
+     */
+    private boolean revogado(String token, UserDetails userDetails) {
+        if (!(userDetails instanceof UsuarioAutenticado u) || u.getSenhaAlteradaEm() == null) return false;
+        Instant alteradaEm = u.getSenhaAlteradaEm().atZone(relogio.getZone()).toInstant().truncatedTo(ChronoUnit.SECONDS);
+        boolean revogado = jwtService.emitidoEm(token).isBefore(alteradaEm);
+        if (revogado) log.info("Token anterior à redefinição de senha recusado");
+        return revogado;
     }
 }

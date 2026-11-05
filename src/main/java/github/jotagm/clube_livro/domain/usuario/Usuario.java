@@ -39,10 +39,16 @@ public class Usuario {
     /** Lembretes por e-mail ("lembrar quem não votou"). Nulo = nunca mexeu = recebe. */
     @Column(name = "receber_lembretes")
     Boolean receberLembretes;
+    /**
+     * Última redefinição de senha. Token emitido antes disto não vale mais: quem redefine a
+     * senha porque perdeu o controle da conta derruba as sessões abertas em outros aparelhos.
+     */
+    @Column(name = "senha_alterada_em")
+    LocalDateTime senhaAlteradaEm;
 
     /** Construtor sem bio: é o que o cadastro e os testes sempre usaram. */
     public Usuario(Integer id, String nome, String email, String senhaHash, LocalDateTime createdAt) {
-        this(id, nome, email, senhaHash, createdAt, null, null, null, null);
+        this(id, nome, email, senhaHash, createdAt, null, null, null, null, null);
     }
 
     public void atualizarDados(String nome, String email) {
@@ -85,6 +91,12 @@ public class Usuario {
 
     public void definirSenhaHash(String senhaHash) {
         this.senhaHash = senhaHash;
+    }
+
+    /** "Esqueci minha senha": troca o hash e marca o momento, que invalida os tokens antigos. */
+    public void redefinirSenha(String novoHash, LocalDateTime momento) {
+        this.senhaHash = novoHash;
+        this.senhaAlteradaEm = momento;
     }
 
     public static Usuario novo(String nome, String email, String senha) {

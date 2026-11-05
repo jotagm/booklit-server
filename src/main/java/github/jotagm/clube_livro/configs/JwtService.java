@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.util.Base64;
+import java.time.Instant;
 import java.util.Date;
 
 @Service
@@ -26,6 +27,12 @@ public class JwtService {
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getChave())
                 .compact();
+    }
+
+    /** Momento de emissão (segundos inteiros, como o {@code iat} do JWT). */
+    public Instant emitidoEm(String token) {
+        Date iat = extrairClaims(token).getIssuedAt();
+        return iat == null ? Instant.EPOCH : iat.toInstant();
     }
 
     public String extrairEmail(String token) {

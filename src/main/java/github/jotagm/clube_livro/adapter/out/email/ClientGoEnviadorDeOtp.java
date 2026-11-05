@@ -116,6 +116,7 @@ public class ClientGoEnviadorDeOtp implements EnviadorDeOtp {
             case LOGIN -> "otp-login";
             case VERIFICAR_EMAIL -> "otp-verificar-email";
             case REDEFINIR_PIN -> "otp-redefinir-pin";
+            case REDEFINIR_SENHA -> "otp-redefinir-senha";
         };
     }
 
