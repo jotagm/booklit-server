@@ -1,5 +1,8 @@
 package github.jotagm.clube_livro.migracao;
 
+import github.jotagm.auth.otp.Finalidade;
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +48,21 @@ class MigracoesPostgresTest {
 
         assertTrue(versoes.size() >= 2, "esperava ao menos V1 e V2, veio " + versoes);
         assertEquals("1", versoes.get(0));
+    }
+
+    /**
+     * O banco tem um CHECK nas finalidades do OTP. Finalidade nova no auth-core sem a migração
+     * que a libera só aparecia em produção: todo pedido de código dela falhava ao gravar.
+     */
+    @Test
+    void todasAsFinalidadesDoOtpPodemSerGravadas() {
+        for (Finalidade finalidade : Finalidade.values()) {
+            jdbc.update("""
+                    insert into t_desafio_otp (id, destinatario, finalidade, codigo_hash, tentativas_restantes, criado_em, expira_em)
+                    values (?, 'teste@teste.dev', ?, repeat('0', 64), 5, now(), now() + interval '10 minutes')
+                    """, UUID.randomUUID(), finalidade.name());
+        }
+        jdbc.update("delete from t_desafio_otp where destinatario = 'teste@teste.dev'");
     }
 
     @Test
